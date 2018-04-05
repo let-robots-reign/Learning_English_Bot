@@ -1,7 +1,7 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup
+from translating_api import translator, detect_lang
 from database import *
-import requests
 import sys
 
 try:
@@ -46,6 +46,7 @@ def start_dialogue(bot, update, user_data):
             'Чтобы передать мне слово или фразу на перевод, напишите мне "переведи (мне) / translate %слово%" '
             'либо же просто "%слово%". '
             'После этого вы сможете выбрать, добавлять ли слово в ваш словарь.'
+            'Чтобы посмотреть последние добавленные слова, введите /show_dict.'
         )
 
         user_data["words_num"] = 0
@@ -65,6 +66,7 @@ def start_dialogue(bot, update, user_data):
         update.message.reply_text(
             'To transfer a word for translation, write "переведи (мне) / translate %word%" or just "%word%". '
             'Afterwards, you can decide whether you want to add it to your dictionary or not.'
+            'To overview last added words, you can type /show_dict.'
         )
 
         user_data["words_num"] = 0
@@ -124,30 +126,35 @@ def translate_handling(bot, update, user_data):
     return DICT_ADDING
 
 
-def translator(text, lang):
-    accompanying_text = "Переведено сервисом «Яндекс.Переводчик» http://translate.yandex.ru/."
-    translator_url = "https://translate.yandex.net/api/v1.5/tr.json/translate"
-    response = requests.get(
-        translator_url,
-        params={
-            "key": API_KEY,
-            "lang": lang,
-            "text": text
-        })
-    return "\n\n".join([response.json()["text"][0], accompanying_text])
+def show_dict(bot, update, user_data):
+    data_base = DataBase()
+    data_base.create_table(update.message.from_user.first_name, update.message.from_user.last_name)
+    dictionary = data_base.read_dict()
+    if not dictionary:
+        if user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "Извините, похоже, вы еще ничего не добавили в словарь."
+            )
+        elif user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "Sorry, seems like you haven't added anything to your dictionary yet."
+            )
+    elif user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Последние добавленные слова:"
+        )
+        update.message.reply_text(
+            "\n".join(["{} - {}".format(word, translation) for index, word, translation in dictionary[:100][::-1]])
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Last added words:"
+        )
+        update.message.reply_text(
+            "\n".join(["{} - {}".format(word, translation) for index, word, translation in dictionary[:100][::-1]])
+        )
 
-
-def detect_lang(text):
-    detector_url = "https://translate.yandex.net/api/v1.5/tr.json/detect"
-    response = requests.get(
-        detector_url,
-        params={
-            "key": API_KEY,
-            "text": text,
-            "hint": "ru,en"
-        })
-    result = response.json()["lang"]
-    return result + "-ru" if result == "en" else result + "-en"
+    data_base.close()
 
 
 def adding_to_dict(bot, update, user_data):
@@ -155,7 +162,7 @@ def adding_to_dict(bot, update, user_data):
 
         data_base = DataBase()
         data_base.create_table(update.message.from_user.first_name, update.message.from_user.last_name)
-        data_base.inserting(user_data["words_num"], user_data["current_word"], user_data["current_translation"])
+        data_base.insert_word(user_data["words_num"], user_data["current_word"], user_data["current_translation"])
         user_data["words_num"] += 1
 
         if user_data["lang_spoken"] == "ru":
@@ -208,7 +215,8 @@ def main():
         entry_points=[CommandHandler('start', setting_up)],
         states={
             START_DIALOGUE: [MessageHandler(Filters.text, start_dialogue, pass_user_data=True)],
-            TRANSLATE: [MessageHandler(Filters.text, translate_handling, pass_user_data=True)],
+            TRANSLATE: [MessageHandler(Filters.text, translate_handling, pass_user_data=True),
+                        CommandHandler("show_dict", show_dict, pass_user_data=True)],
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)]
         },
         fallbacks=[CommandHandler('reset', reset)]

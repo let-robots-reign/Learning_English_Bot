@@ -14,13 +14,17 @@ class DataBase:
         self.cursor.execute("CREATE TABLE IF NOT EXISTS %s_%s(word_id INT, english_word TEXT, translation TEXT)"
                             % (user_first_name, user_last_name))
 
-    def inserting(self, word_num, word, translation):
+    def insert_word(self, word_num, word, translation):
         try:
             self.cursor.execute("INSERT INTO %s_%s (word_id, english_word, translation) VALUES(?, ?, ?)"
                                 % (self.user_first_name, self.user_last_name), (word_num, word, translation))
             self.conn.commit()
         except Exception as e:
             print(e)
+
+    def read_dict(self):
+        self.cursor.execute("SELECT * FROM %s_%s" % (self.user_first_name, self.user_last_name))
+        return self.cursor.fetchall()
 
     def close(self):
         self.cursor.close()
