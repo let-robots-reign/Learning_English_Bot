@@ -1,5 +1,6 @@
-from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler, BaseFilter
+from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup
+from database import *
 import requests
 import sys
 
@@ -17,23 +18,16 @@ lang_keyboard = [["русский", "английский"]]
 markup = ReplyKeyboardMarkup(lang_keyboard, one_time_keyboard=True)
 
 
-# class TranslatorFilter(BaseFilter):
-#     def filter(self, message):
-#         msg = message.text.lower()
-#         return "translate" in msg or "переведи" in msg or "переведи мне" in msg
-#
-#
-# translator_filter = TranslatorFilter()
-
-
 def setting_up(bot, update):
+    data_base = DataBase()
+    data_base.create_table(update.message.from_user.first_name, update.message.from_user.last_name)
     update.message.reply_text(
         "Выберите язык, на котором я буду с вами говорить."
         "\n\n"
         "Choose the language I will speak.",
         reply_markup=markup
     )
-
+    data_base.close()
     return START_DIALOGUE
 
 
@@ -54,6 +48,8 @@ def start_dialogue(bot, update, user_data):
             'После этого вы сможете выбрать, добавлять ли слово в ваш словарь.'
         )
 
+        user_data["words_num"] = 0
+
         return TRANSLATE
 
     elif update.message.text == "английский":
@@ -71,6 +67,8 @@ def start_dialogue(bot, update, user_data):
             'Afterwards, you can decide whether you want to add it to your dictionary or not.'
         )
 
+        user_data["words_num"] = 0
+
         return TRANSLATE
 
     else:
@@ -84,23 +82,35 @@ def start_dialogue(bot, update, user_data):
 
 def translate_handling(bot, update, user_data):
     if "translate" == update.message.text.lower().split()[0]:
-        translation = translator(' '.join(update.message.text.split()[1:]))
+        text_to_translate = ' '.join(update.message.text.split()[1:])
+        lang = detect_lang(text_to_translate)
+        translation = translator(text_to_translate, lang)
         update.message.reply_text(translation)
-        # user_data[translation] = update.message.text              # replace with database
-    elif "переведи" == update.message.text.lower().split()[0] \
-            or "переведи мне" == ' '.join(update.message.text.lower().split()[:2]):
+
+    elif "переведи" == update.message.text.lower().split()[0]:
         if "переведи мне" in update.message.text.lower():
-            translation = translator(' '.join(update.message.text.split()[2:]))
+            text_to_translate = ' '.join(update.message.text.split()[2:])
+            lang = detect_lang(text_to_translate)
+            translation = translator(text_to_translate, lang)
             update.message.reply_text(translation)
-            # user_data[translation] = update.message.text              # replace with database
         else:
-            translation = translator(' '.join(update.message.text.split()[1:]))
+            text_to_translate = ' '.join(update.message.text.split()[1:])
+            lang = detect_lang(text_to_translate)
+            translation = translator(text_to_translate, lang)
             update.message.reply_text(translation)
-            # user_data[translation] = update.message.text              # replace with database
+
     else:
-        translation = translator(' '.join(update.message.text))
+        text_to_translate = ''.join(update.message.text)
+        lang = detect_lang(text_to_translate)
+        translation = translator(text_to_translate, lang)
         update.message.reply_text(translation)
-        # user_data[translation] = update.message.text              # replace with database
+
+    if lang == "ru-en":
+        user_data["current_word"] = translation.split("\n\n")[0]
+        user_data["current_translation"] = text_to_translate
+    elif lang == "en-ru":
+        user_data["current_word"] = text_to_translate
+        user_data["current_translation"] = translation.split("\n\n")[0]
 
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
@@ -114,21 +124,40 @@ def translate_handling(bot, update, user_data):
     return DICT_ADDING
 
 
-def translator(text):
+def translator(text, lang):
     accompanying_text = "Переведено сервисом «Яндекс.Переводчик» http://translate.yandex.ru/."
     translator_url = "https://translate.yandex.net/api/v1.5/tr.json/translate"
     response = requests.get(
         translator_url,
         params={
             "key": API_KEY,
-            "lang": "ru-en",
+            "lang": lang,
             "text": text
         })
     return "\n\n".join([response.json()["text"][0], accompanying_text])
 
 
+def detect_lang(text):
+    detector_url = "https://translate.yandex.net/api/v1.5/tr.json/detect"
+    response = requests.get(
+        detector_url,
+        params={
+            "key": API_KEY,
+            "text": text,
+            "hint": "ru,en"
+        })
+    result = response.json()["lang"]
+    return result + "-ru" if result == "en" else result + "-en"
+
+
 def adding_to_dict(bot, update, user_data):
     if update.message.text.lower() == "да" or update.message.text.lower() == "yes":
+
+        data_base = DataBase()
+        data_base.create_table(update.message.from_user.first_name, update.message.from_user.last_name)
+        data_base.inserting(user_data["words_num"], user_data["current_word"], user_data["current_translation"])
+        user_data["words_num"] += 1
+
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
                 "Отлично! Слово добавлено в словарь."
@@ -137,6 +166,8 @@ def adding_to_dict(bot, update, user_data):
             update.message.reply_text(
                 "Great! The word's been added to your dictionary."
             )
+
+        data_base.close()
 
         return TRANSLATE
 
@@ -180,7 +211,7 @@ def main():
             TRANSLATE: [MessageHandler(Filters.text, translate_handling, pass_user_data=True)],
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)]
         },
-        fallbacks=[CommandHandler('reset', reset, pass_user_data=True)]
+        fallbacks=[CommandHandler('reset', reset)]
     )
 
     dp.add_handler(conv_handler)
