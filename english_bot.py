@@ -1,12 +1,19 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup
-from translating_api import translator, detect_lang
+from translating_api import translator, detect_lang, ogg_to_text
 from database import *
+import logging
 import sys
+import os
+
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 
 try:
     with open("tokens.txt", 'r', encoding="utf8") as infile:
-        TOKEN, API_KEY = (line.strip() for line in infile.readlines())
+        TOKEN, API_KEY = (line.strip() for line in infile.readlines()[:2])
 except FileNotFoundError:
     print("Для работы нужен Telegram Token и Yandex Translate Key")
     sys.exit(1)
@@ -18,9 +25,14 @@ lang_keyboard = [["русский", "английский"]]
 markup = ReplyKeyboardMarkup(lang_keyboard, one_time_keyboard=True)
 
 
+def error(bot, update, error):
+    logger.warning('Update "%s" caused error "%s"', update, error)
+    bot.send_message(chat_id=590585095, text='Update "%s" caused error "%s"' % (update, error))
+
+
 def setting_up(bot, update):
     data_base = DataBase()
-    data_base.create_table(update.message.from_user.first_name, update.message.from_user.last_name)
+    data_base.create_table(update.message.from_user.id)
     update.message.reply_text(
         "Выберите язык, на котором я буду с вами говорить."
         "\n\n"
@@ -28,6 +40,9 @@ def setting_up(bot, update):
         reply_markup=markup
     )
     data_base.close()
+    bot.send_message(chat_id=590585095, text="User %s %s started using the bot."
+                                             % (update.message.from_user.first_name, update.message.from_user.last_name))
+
     return START_DIALOGUE
 
 
@@ -126,9 +141,32 @@ def translate_handling(bot, update, user_data):
     return DICT_ADDING
 
 
+def voice_translate_handling(bot, update, user_data):
+    file_id = update.message.voice.file_id
+    new_file = bot.get_file(file_id)
+    new_file.download('voice%s.ogg' % update.message.from_user.id)
+    #print(new_file)
+    text_to_translate = ogg_to_text('voice%s.ogg' % update.message.from_user.id)
+    if not text_to_translate:
+        if user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "Извините, не могу понять, что вы говорите."
+            )
+        elif user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "Sorry, I can't conceive what you are saying."
+            )
+    else:
+        lang = detect_lang(text_to_translate)
+        translation = translator(text_to_translate, lang)
+        update.message.reply_text(translation)
+
+    os.remove('voice%s.ogg' % update.message.from_user.id)
+
+
 def show_dict(bot, update, user_data):
     data_base = DataBase()
-    data_base.create_table(update.message.from_user.first_name, update.message.from_user.last_name)
+    data_base.create_table(update.message.from_user.id)
     dictionary = data_base.read_dict()
     if not dictionary:
         if user_data["lang_spoken"] == "ru":
@@ -161,7 +199,7 @@ def adding_to_dict(bot, update, user_data):
     if update.message.text.lower() == "да" or update.message.text.lower() == "yes":
 
         data_base = DataBase()
-        data_base.create_table(update.message.from_user.first_name, update.message.from_user.last_name)
+        data_base.create_table(update.message.from_user.id)
         data_base.insert_word(user_data["words_num"], user_data["current_word"], user_data["current_translation"])
         user_data["words_num"] += 1
 
@@ -203,6 +241,12 @@ def adding_to_dict(bot, update, user_data):
         return DICT_ADDING
 
 
+def rules(bot, update):
+    update.message.reply_text(
+        "Sorry, not available at the moment"
+    )
+
+
 def reset(bot, update):
     pass
 
@@ -216,6 +260,7 @@ def main():
         states={
             START_DIALOGUE: [MessageHandler(Filters.text, start_dialogue, pass_user_data=True)],
             TRANSLATE: [MessageHandler(Filters.text, translate_handling, pass_user_data=True),
+                        MessageHandler(Filters.voice, voice_translate_handling, pass_user_data=True),
                         CommandHandler("show_dict", show_dict, pass_user_data=True)],
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)]
         },
@@ -223,6 +268,7 @@ def main():
     )
 
     dp.add_handler(conv_handler)
+    dp.add_error_handler(error)
 
     updater.start_polling()
     updater.idle()

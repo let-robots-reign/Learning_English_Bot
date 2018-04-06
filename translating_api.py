@@ -53,3 +53,25 @@ def ogg_to_text(file):
     )
     root = ET.fromstring(response.content)
     return root[0].text
+
+
+def text_to_ogg(text, lang, id):
+    synthesis_template = "https://tts.voicetech.yandex.net/generate"
+    response = requests.get(
+        synthesis_template,
+        params={
+            "key": SPEECHKIT_KEY,
+            "text": text,
+            "format": "opus",
+            "lang": lang,
+            "speaker": "oksana"
+        }
+    )
+
+    voice_file = "voice%s.ogg" % id
+    with open(voice_file, "wb") as file:
+        file.write(response.content)
+
+
+#text_to_ogg("привет, я бот, который синтезирует речь", "ru-RU", 590585095)
+#ogg_to_text('voice590585095.ogg')
