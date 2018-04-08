@@ -75,7 +75,7 @@ def text_to_ogg(text, lang):
 
 def upload_file(filename, disk_path):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources/upload?path={}&overwrite=true'.format(disk_path)
-    headers = {'Authorization':'OAuth AQAAAAAZQEWDAATv8dNapIbiAUA6l-vaZFXrR8g'.format(DISK_TOKEN)}
+    headers = {'Authorization':'OAuth {}'.format(DISK_TOKEN)}
     x = requests.get(host_name, headers=headers)
     href = x.json()['href']
     x = requests.put(href, files={'file':open(filename, 'rb')})
@@ -96,3 +96,9 @@ def delete(filename):
     headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
     x = requests.delete(host_name, headers=headers)
     return bool(x)
+
+def get_files_list():
+    host_name='https://cloud-api.yandex.net/v1/disk/resources/files'
+    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+    x = requests.get(host_name, headers=headers)
+    return x.json()
