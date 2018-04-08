@@ -38,7 +38,7 @@ def detect_lang(text):
 
 
 def ogg_to_text(file):
-    headers = {'Content-Type': 'audio/x-speex;codecs=opus'}
+    headers = {'Content-Type': 'audio/ogg;codecs=opus'}
     speech_url = "http://asr.yandex.net/asr_xml"
     data = open(file, 'rb')
     response = requests.post(
