@@ -1,6 +1,6 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup
-from translating_api import translator, detect_lang, ogg_to_text
+from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg
 from database import *
 import logging
 import sys
@@ -137,7 +137,8 @@ def translate_handling(bot, update, user_data):
         update.message.reply_text(
             "Do you want to add this to your dictionary?"
         )
-
+    get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
+    bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
     return DICT_ADDING
 
 
@@ -146,7 +147,7 @@ def voice_translate_handling(bot, update, user_data):
     new_file = bot.get_file(file_id)
     new_file.download('voice%s.ogg' % update.message.from_user.id)
     #print(new_file)
-    text_to_translate = ogg_to_text('voice%s.ogg' % update.message.from_user.id)
+    text_to_translate = ogg_to_text('input_voice%s.ogg' % update.message.from_user.id)
     if not text_to_translate:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -160,7 +161,6 @@ def voice_translate_handling(bot, update, user_data):
         lang = detect_lang(text_to_translate)
         translation = translator(text_to_translate, lang)
         update.message.reply_text(translation)
-
     os.remove('voice%s.ogg' % update.message.from_user.id)
 
 
@@ -246,7 +246,6 @@ def rules(bot, update):
         "Sorry, not available at the moment"
     )
 
-
 def reset(bot, update):
     pass
 
@@ -261,7 +260,7 @@ def main():
             START_DIALOGUE: [MessageHandler(Filters.text, start_dialogue, pass_user_data=True)],
             TRANSLATE: [MessageHandler(Filters.text, translate_handling, pass_user_data=True),
                         MessageHandler(Filters.voice, voice_translate_handling, pass_user_data=True),
-                        CommandHandler("show_dict", show_dict, pass_user_data=True)],
+                        CommandHandler("show_dict", show_dict, pass_user_data=True),
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)]
         },
         fallbacks=[CommandHandler('reset', reset)]
