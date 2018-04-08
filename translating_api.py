@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 try:
     with open("tokens.txt", 'r', encoding="utf8") as infile:
-        API_KEY, SPEECHKIT_KEY, UUID = (line.strip() for line in infile.readlines()[1:])
+        API_KEY, SPEECHKIT_KEY, UUID, DISK_TOKEN = (line.strip() for line in infile.readlines()[1:])
 except FileNotFoundError:
     print("Отсутствует Yandex Translate Key или Yandex SpeechKit Key")
     sys.exit(1)
@@ -73,6 +73,24 @@ def text_to_ogg(text, lang):
     with open(voice_file, "wb") as file:
         file.write(response.content)
     return voice_file
+
+def upload_file(filename, disk_path):
+    host_name = 'https://cloud-api.yandex.net/v1/disk/resources/upload?path={}&overwrite=true'.format(disk_path)
+    headers = {'Authorization':'OAuth AQAAAAAZQEWDAATv8dNapIbiAUA6l-vaZFXrR8g'.format(DISK_TOKEN)}
+    x = requests.get(host_name, headers=headers)
+    href = x.json()['href']
+    x = requests.put(href, files={'file':open(filename, 'rb')})
+    return x
+
+def get_file(filename):
+    host_name = 'https://cloud-api.yandex.net/v1/disk/resources/download?path={}'.format(filename)
+    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+    x = requests.get(host_name, headers=headers)
+    print(x.content)
+    print(x.text)
+    href = x.json()['href']
+    x = requests.get(href)
+    print(x.text)
 
 
 #text_to_ogg("привет, я бот, который синтезирует речь", "ru-RU", 590585095)
