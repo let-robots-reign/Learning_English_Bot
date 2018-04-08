@@ -79,7 +79,7 @@ def upload_file(filename, disk_path):
     x = requests.get(host_name, headers=headers)
     href = x.json()['href']
     x = requests.put(href, files={'file':open(filename, 'rb')})
-    return x
+    return bool(x)
 
 def get_file(filename):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources/download?path={}'.format(filename)
@@ -90,3 +90,9 @@ def get_file(filename):
     href = x.json()['href']
     x = requests.get(href)
     return x.text
+
+def delete(filename):
+    host_name = 'https://cloud-api.yandex.net/v1/disk/resources?path='.format(filename)
+    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+    x = requests.delete(host_name, headers=headers)
+    return bool(x)
