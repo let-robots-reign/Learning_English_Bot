@@ -90,7 +90,3 @@ def get_file(filename):
     href = x.json()['href']
     x = requests.get(href)
     return x.text
-
-
-#text_to_ogg("привет, я бот, который синтезирует речь", "ru-RU", 590585095)
-#ogg_to_text('voice590585095.ogg')
