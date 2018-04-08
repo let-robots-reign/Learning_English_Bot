@@ -51,7 +51,6 @@ def ogg_to_text(file):
         headers=headers,
         data=data
     )
-    #print(response.content)
     root = ET.fromstring(response.content)
     return root[0].text
 
@@ -90,7 +89,3 @@ def get_file(filename):
     href = x.json()['href']
     x = requests.get(href)
     print(x.text)
-
-
-#text_to_ogg("привет, я бот, который синтезирует речь", "ru-RU", 590585095)
-#ogg_to_text('voice590585095.ogg')
