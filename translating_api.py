@@ -38,7 +38,7 @@ def detect_lang(text):
 
 
 def ogg_to_text(file):
-    headers = {'Content-Type': 'audio/x-speex'}
+    headers = {'Content-Type': 'audio/ogg;codecs=opus'}
     speech_url = "http://asr.yandex.net/asr_xml"
     data = open(file, 'rb')
     response = requests.post(
@@ -51,11 +51,12 @@ def ogg_to_text(file):
         headers=headers,
         data=data
     )
+    #print(response.content)
     root = ET.fromstring(response.content)
     return root[0].text
 
 
-def text_to_ogg(text, lang, id):
+def text_to_ogg(text, lang):
     synthesis_template = "https://tts.voicetech.yandex.net/generate"
     response = requests.get(
         synthesis_template,
@@ -68,7 +69,7 @@ def text_to_ogg(text, lang, id):
         }
     )
 
-    voice_file = "voice%s.ogg" % id
+    voice_file = "voice.ogg"
     with open(voice_file, "wb") as file:
         file.write(response.content)
 
