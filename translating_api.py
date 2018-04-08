@@ -51,7 +51,6 @@ def ogg_to_text(file):
         headers=headers,
         data=data
     )
-    #print(response.content)
     root = ET.fromstring(response.content)
     return root[0].text
 
@@ -68,11 +67,7 @@ def text_to_ogg(text, lang):
             "speaker": "oksana"
         }
     )
-
-    voice_file = "voice.ogg"
+    voice_file = "output_voice.ogg"
     with open(voice_file, "wb") as file:
         file.write(response.content)
-
-
-#text_to_ogg("привет, я бот, который синтезирует речь", "ru-RU", 590585095)
-#ogg_to_text('voice590585095.ogg')
+    return voice_file
