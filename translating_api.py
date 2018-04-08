@@ -68,10 +68,10 @@ def text_to_ogg(text, lang):
             "speaker": "oksana"
         }
     )
-
-    voice_file = "voice.ogg"
+    voice_file = "output_voice.ogg"
     with open(voice_file, "wb") as file:
         file.write(response.content)
+    return voice_file
 
 
 #text_to_ogg("привет, я бот, который синтезирует речь", "ru-RU", 590585095)

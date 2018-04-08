@@ -1,6 +1,6 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
-from telegram import ReplyKeyboardMarkup, ChatAction
-from translating_api import translator, detect_lang, ogg_to_text
+from telegram import ReplyKeyboardMarkup
+from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg
 from database import *
 import logging
 import sys
@@ -140,15 +140,17 @@ def translate_handling(bot, update, user_data):
         update.message.reply_text(
             "Do you want to add this to your dictionary?"
         )
-
+    get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
+    bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
     return DICT_ADDING
 
 
 def voice_translate_handling(bot, update, user_data):
     file_id = update.message.voice.file_id
     new_file = bot.get_file(file_id)
-    new_file.download('voice.ogg')
-    text_to_translate = ogg_to_text('voice.ogg')
+    new_file.download('input_voice.ogg')
+    #print(new_file)
+    text_to_translate = ogg_to_text('input_voice.ogg')
     if not text_to_translate:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -162,8 +164,7 @@ def voice_translate_handling(bot, update, user_data):
         lang = detect_lang(text_to_translate)
         translation = translator(text_to_translate, lang)
         update.message.reply_text(translation)
-
-    os.remove('voice.ogg')
+    os.remove('input_voice.ogg')
 
 
 def show_dict(bot, update, user_data):
@@ -275,7 +276,6 @@ def rules(bot, update):
     update.message.reply_text(
         "Sorry, not available at the moment"
     )
-
 
 def reset(bot, update, user_data):
     data_base = DataBase(update.message.from_user.id)
