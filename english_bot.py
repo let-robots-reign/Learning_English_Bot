@@ -145,9 +145,9 @@ def translate_handling(bot, update, user_data):
 def voice_translate_handling(bot, update, user_data):
     file_id = update.message.voice.file_id
     new_file = bot.get_file(file_id)
-    new_file.download('voice%s.ogg' % update.message.from_user.id)
+    new_file.download('input_voice.ogg')
     #print(new_file)
-    text_to_translate = ogg_to_text('input_voice%s.ogg' % update.message.from_user.id)
+    text_to_translate = ogg_to_text('input_voice.ogg')
     if not text_to_translate:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -161,7 +161,7 @@ def voice_translate_handling(bot, update, user_data):
         lang = detect_lang(text_to_translate)
         translation = translator(text_to_translate, lang)
         update.message.reply_text(translation)
-    os.remove('voice%s.ogg' % update.message.from_user.id)
+    os.remove('input_voice.ogg')
 
 
 def show_dict(bot, update, user_data):
@@ -260,7 +260,8 @@ def main():
             START_DIALOGUE: [MessageHandler(Filters.text, start_dialogue, pass_user_data=True)],
             TRANSLATE: [MessageHandler(Filters.text, translate_handling, pass_user_data=True),
                         MessageHandler(Filters.voice, voice_translate_handling, pass_user_data=True),
-                        CommandHandler("show_dict", show_dict, pass_user_data=True),
+                        CommandHandler("show_dict", show_dict, pass_user_data=True)
+                        ],
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)]
         },
         fallbacks=[CommandHandler('reset', reset)]
