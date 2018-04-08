@@ -51,7 +51,7 @@ def ogg_to_text(file):
         headers=headers,
         data=data
     )
-    print(response.content)
+    #print(response.content)
     root = ET.fromstring(response.content)
     return root[0].text
 
@@ -69,7 +69,6 @@ def text_to_ogg(text, lang):
         }
     )
     voice_file = "output_voice.ogg"
-    print(response.text)
     with open(voice_file, "wb") as file:
         file.write(response.content)
     return voice_file
