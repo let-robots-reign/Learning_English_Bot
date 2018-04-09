@@ -13,10 +13,17 @@ logger = logging.getLogger(__name__)
 
 
 try:
-    with open("tokens.txt", 'r', encoding="utf8") as infile:
+    with open("tokens.txt", "r", encoding="utf8") as infile:
         TOKEN, API_KEY = (line.strip() for line in infile.readlines()[:2])
 except FileNotFoundError:
     print("Для работы нужен Telegram Token и Yandex Translate Key")
+    sys.exit(1)
+
+try:
+    with open("preset_words.txt", "r", encoding="utf-8-sig") as infile:
+        preset_words = [(line.strip().split()[0], line.strip().split()[1]) for line in infile.readlines()]
+except FileNotFoundError:
+    print("Отсутствует файл 'preset_words.txt'")
     sys.exit(1)
 
 
@@ -134,6 +141,9 @@ def translate_handling(bot, update, user_data):
         user_data["current_word"] = text_to_translate
         user_data["current_translation"] = translation.split("\n\n")[0]
 
+    get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
+    bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
+
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
             "Добавить это слово в словарь?"
@@ -142,8 +152,8 @@ def translate_handling(bot, update, user_data):
         update.message.reply_text(
             "Do you want to add this to your dictionary?"
         )
-    get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
-    bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
+
+    os.remove("output_voice.ogg")
 
     return DICT_ADDING
 
@@ -176,6 +186,9 @@ def voice_translate_handling(bot, update, user_data):
             user_data["current_word"] = text_to_translate
             user_data["current_translation"] = translation.split("\n\n")[0]
 
+        get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
+        bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
+
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
                 "Добавить это слово в словарь?"
@@ -184,8 +197,6 @@ def voice_translate_handling(bot, update, user_data):
             update.message.reply_text(
                 "Do you want to add this to your dictionary?"
             )
-        get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
-        bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
 
         return DICT_ADDING
 
@@ -230,16 +241,29 @@ def adding_to_dict(bot, update, user_data):
 
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
-        data_base.insert_word(user_data["current_word"], user_data["current_translation"])
 
-        if user_data["lang_spoken"] == "ru":
-            update.message.reply_text(
-                "Отлично! Слово добавлено в словарь."
-            )
-        elif user_data["lang_spoken"] == "en":
-            update.message.reply_text(
-                "Great! The word's been added to your dictionary."
-            )
+        if (user_data["current_word"], user_data["current_translation"]) \
+                in [(item[0], item[1]) for item in data_base.read_dict()]:
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Вы уже добавляли это слово в словарь."
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "You already have this word in your dictionary."
+                )
+        else:
+
+            data_base.insert_word(user_data["current_word"], user_data["current_translation"])
+
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Отлично! Слово добавлено в словарь."
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "Great! The word's been added to your dictionary."
+                )
 
         data_base.close()
 
@@ -297,13 +321,27 @@ def lang_changed(bot, update, user_data):
 
 
 def trainings_list(bot, update, user_data):
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    if not data_base.read_dict():
+        if user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "Вы не можете тренировать слова, так как ваш словарь пуст."
+            )
+        elif user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "You can't train words as your dictionary is empty."
+            )
+
+        data_base.close()
+
+        return TRANSLATE
+
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
             "Выберите тренировку.",
             reply_markup=train_markup
         )
-
-        return TRAIN
 
     elif user_data["lang_spoken"] == "en":
         update.message.reply_text(
@@ -311,18 +349,22 @@ def trainings_list(bot, update, user_data):
             reply_markup=train_markup
         )
 
-        return TRAIN
+    return TRAIN
 
 
 def choose_training(bot, update, user_data):
     if update.message.text.lower() == "слово-перевод":
-        word_translation_training(bot, update)
+        word_translation_training(bot, update, user_data)
+        return ANSWER
     elif update.message.text.lower() == "перевод-слово":
-        translation_word_training(bot, update)
+        translation_word_training(bot, update, user_data)
+        return ANSWER
     elif update.message.text.lower() == "аудирование":
-        audio_training(bot, update)
+        audio_training(bot, update, user_data)
+        return ANSWER
     elif update.message.text.lower() == "собери слово":
-        construct_word_training(bot, update)
+        construct_word_training(bot, update, user_data)
+        return ANSWER
     elif update.message.text.lower() == "выход из раздела":
         return TRANSLATE
     else:
@@ -377,28 +419,129 @@ def delete_word(bot, update, args, user_data):
     return TRANSLATE
 
 
-def word_translation_training(bot, update):
+def word_translation_training(bot, update, user_data):
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
+    item = random.choice(records)  # выбирается случайное слово
+    word, translation = item[0], item[1]  # само слово и его перевод
+    translation_position = random.randint(0, 3)  # позиция правильного перевода в options_keyboard
+    options_keyboard = [["", ""],
+                        ["", ""]]
+    options_markup = ReplyKeyboardMarkup(options_keyboard, one_time_keyboard=True)
+    if 0 <= translation_position <= 1:
+        options_keyboard[0][translation_position] = translation
+    elif 2 <= translation_position <= 3:
+        options_keyboard[1][translation_position - 2] = translation
+
+    for i in range(len(options_keyboard)):
+        for j in range(len(options_keyboard[i])):
+            if not options_keyboard[i][j]:
+                if len(records) >= 3:  # если есть чем заполнить клавиатуру из словаря пользователя
+                    fill_record = random.choice(records)[1]
+                else:  # иначе заполняем словами из предустановленного списка
+                    fill_record = random.choice(preset_words)[1]
+                while fill_record in options_keyboard[0] or fill_record in options_keyboard[1]:  # избегаем повторений
+                    if len(records) >= 3:  # аналогично
+                        fill_record = random.choice(records)[1]
+                    else:
+                        fill_record = random.choice(preset_words)[1]
+                options_keyboard[i][j] = fill_record
+
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Выберите верный перевод.\n"
+            "{}".format(word),
+            reply_markup=options_markup
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Choose the right translation.\n"
+            "{}".format(word),
+            reply_markup=options_markup
+        )
+
+    user_data["current_answer"] = translation
+    data_base.close()
+
+
+def translation_word_training(bot, update, user_data):
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
+    item = random.choice(records)  # выбирается случайное слово
+    word, translation = item[0], item[1]  # само слово и его перевод
+    word_position = random.randint(0, 3)  # позиция слова в options_keyboard
+    options_keyboard = [["", ""],
+                        ["", ""]]
+    options_markup = ReplyKeyboardMarkup(options_keyboard, one_time_keyboard=True)
+    if 0 <= word_position <= 1:
+        options_keyboard[0][word_position] = word
+    elif 2 <= word_position <= 3:
+        options_keyboard[1][word_position - 2] = word
+
+    for i in range(len(options_keyboard)):
+        for j in range(len(options_keyboard[i])):
+            if not options_keyboard[i][j]:
+                if len(records) >= 3:  # если есть чем заполнить клавиатуру из словаря пользователя
+                    fill_record = random.choice(records)[0]
+                else:  # иначе заполняем словами из предустановленного списка
+                    fill_record = random.choice(preset_words)[0]
+                while fill_record in options_keyboard[0] or fill_record in options_keyboard[1]:  # избегаем повторений
+                    if len(records) >= 3:  # аналогично
+                        fill_record = random.choice(records)[0]
+                    else:
+                        fill_record = random.choice(preset_words)[0]
+                options_keyboard[i][j] = fill_record
+
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Выберите верное английское слово.\n"
+            "{}".format(translation),
+            reply_markup=options_markup
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Choose the right english word.\n"
+            "{}".format(translation),
+            reply_markup=options_markup
+        )
+
+    user_data["current_answer"] = word
+    data_base.close()
+
+
+def audio_training(bot, update, user_data):
     pass
-    # data_base = DataBase(update.message.from_user.id)
-    # data_base.create_table()
-    # word = random.choice([item[0] for item in data_base.select_uncompleted_words()])
-    # update.message.reply_text(word)
 
 
-def translation_word_training(bot, update):
+def construct_word_training(bot, update, user_data):
     pass
 
 
-def audio_training(bot, update):
-    pass
+def check_answer(bot, update, user_data):
+    if update.message.text == user_data["current_answer"]:
+        if user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "Верно!"
+            )
+        elif user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "Correct!"
+            )
 
+    else:
+        if user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "Неверно!"
+            )
+        elif user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "Wrong!"
+            )
 
-def construct_word_training(bot, update):
-    pass
-
-
-def check_answer(bot, update):
-    pass
+    trainings_list(bot, update, user_data)
+    return TRAIN
 
 
 def reset(bot, update, user_data):
@@ -438,7 +581,7 @@ def main():
 
             TRAIN: [MessageHandler(Filters.text, choose_training, pass_user_data=True)],
 
-            ANSWER: [MessageHandler(Filters.text, check_answer)]
+            ANSWER: [MessageHandler(Filters.text, check_answer, pass_user_data=True)]
         },
         fallbacks=[CommandHandler('reset', reset, pass_user_data=True)]
     )
