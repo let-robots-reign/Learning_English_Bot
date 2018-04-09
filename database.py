@@ -20,6 +20,13 @@ class DataBase:
         self.cursor.execute("SELECT english_word, translation FROM user_%s WHERE completion < 100" % self.user_id)
         return self.cursor.fetchall()
 
+    def increment_completion(self, word):
+        current_completion = self.cursor.execute("SELECT completion FROM user_%s WHERE english_word = (?)"
+                                                 % self.user_id, (word,)).fetchall()
+        self.cursor.execute("UPDATE user_%s SET completion = (?) WHERE english_word = (?)"
+                            % self.user_id, (current_completion[0][0] + 25, word))
+        self.conn.commit()
+
     def read_dict(self):
         self.cursor.execute("SELECT * FROM user_%s" % self.user_id)
         return self.cursor.fetchall()

@@ -221,7 +221,7 @@ def show_dict(bot, update, user_data):
             "Последние добавленные слова:"
         )
         update.message.reply_text(
-            "\n".join(["{} - {}".format(word, translation)
+            "\n".join(["{} - {}, выученно на {}%".format(word, translation, completion)
                        for word, translation, completion in dictionary[:100][::-1]])
         )
     elif user_data["lang_spoken"] == "en":
@@ -229,7 +229,7 @@ def show_dict(bot, update, user_data):
             "Last added words:"
         )
         update.message.reply_text(
-            "\n".join(["{} - {}".format(word, translation)
+            "\n".join(["{} - {}, {}% completed".format(word, translation, completion)
                        for word, translation, completion in dictionary[:100][::-1]])
         )
 
@@ -323,14 +323,14 @@ def lang_changed(bot, update, user_data):
 def trainings_list(bot, update, user_data):
     data_base = DataBase(update.message.from_user.id)
     data_base.create_table()
-    if not data_base.read_dict():
+    if not data_base.select_uncompleted_words():
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
-                "Вы не можете тренировать слова, так как ваш словарь пуст."
+                "Вы не можете тренировать слова, так как ваш словарь пуст, либо же вы уже выучили все слова"
             )
         elif user_data["lang_spoken"] == "en":
             update.message.reply_text(
-                "You can't train words as your dictionary is empty."
+                "You can't train words as your dictionary is empty or you have already learned all the words."
             )
 
         data_base.close()
@@ -462,6 +462,8 @@ def word_translation_training(bot, update, user_data):
         )
 
     user_data["current_answer"] = translation
+    user_data["current_word"] = word
+    user_data["current_translation"] = translation
     data_base.close()
 
 
@@ -508,6 +510,8 @@ def translation_word_training(bot, update, user_data):
         )
 
     user_data["current_answer"] = word
+    user_data["current_word"] = word
+    user_data["current_translation"] = translation
     data_base.close()
 
 
@@ -520,7 +524,11 @@ def construct_word_training(bot, update, user_data):
 
 
 def check_answer(bot, update, user_data):
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+
     if update.message.text == user_data["current_answer"]:
+        data_base.increment_completion(user_data["current_word"])
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
                 "Верно!"
@@ -541,6 +549,10 @@ def check_answer(bot, update, user_data):
             )
 
     trainings_list(bot, update, user_data)
+    if not data_base.select_uncompleted_words():
+        data_base.close()
+        return TRANSLATE
+    data_base.close()
     return TRAIN
 
 
