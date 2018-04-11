@@ -89,7 +89,7 @@ def get_file(filename):
     print(x.text)
     href = x.json()['href']
     x = requests.get(href)
-    return x.text
+    return x.content
 
 def delete(filename):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources?path='.format(filename)

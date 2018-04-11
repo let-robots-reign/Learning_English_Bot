@@ -1,7 +1,8 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, ChatAction
-from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg
+from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file
 from database import *
+import threading
 import logging
 import random
 import sys
@@ -11,6 +12,17 @@ import os
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+f = open('users.db', 'wb')
+x = get_file('/english_learning_data/users.db')
+f.write(x)
+f.close()
+
+def save_file():
+  threading.Timer(5, save_file).start()
+  upload_file('users.db', '/english_learning_data/users.db')
+  print('saved!')
+
+save_file()
 
 try:
     with open("tokens.txt", "r", encoding="utf8") as infile:
@@ -55,7 +67,6 @@ def setting_up(bot, update):
     data_base.close()
     bot.send_message(chat_id=590585095, text="User %s %s started using the bot."
                                              % (update.message.from_user.first_name, update.message.from_user.last_name))
-
     return START_DIALOGUE
 
 
