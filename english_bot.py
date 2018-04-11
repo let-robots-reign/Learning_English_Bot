@@ -253,7 +253,7 @@ def adding_to_dict(bot, update, user_data):
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
 
-        if (user_data["current_word"], user_data["current_translation"]) \
+        if (user_data["current_word"].lower(), user_data["current_translation"].lower()) \
                 in [(item[0], item[1]) for item in data_base.read_dict()]:
             if user_data["lang_spoken"] == "ru":
                 update.message.reply_text(
@@ -265,7 +265,7 @@ def adding_to_dict(bot, update, user_data):
                 )
         else:
 
-            data_base.insert_word(user_data["current_word"], user_data["current_translation"])
+            data_base.insert_word(user_data["current_word"].lower(), user_data["current_translation"].lower())
 
             if user_data["lang_spoken"] == "ru":
                 update.message.reply_text(
