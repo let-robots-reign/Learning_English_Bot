@@ -12,17 +12,18 @@ import os
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-f = open('users.db', 'wb')
-x = get_file('/english_learning_data/users.db')
-f.write(x)
-f.close()
+base_file = open('users.db', 'wb')
+base_file.write(get_file('/english_learning_data/users.db'))
+base_file.close()
+
 
 def save_file():
-  threading.Timer(5, save_file).start()
-  upload_file('users.db', '/english_learning_data/users.db')
-  print('saved!')
+    threading.Timer(5, save_file).start()
+    upload_file('users.db', '/english_learning_data/users.db')
+
 
 save_file()
+
 
 try:
     with open("tokens.txt", "r", encoding="utf8") as infile:
@@ -71,7 +72,7 @@ def setting_up(bot, update):
 
 
 def start_dialogue(bot, update, user_data):
-    if update.message.text == "русский":
+    if update.message.text.lower() == "русский":
         user_data["lang_spoken"] = "ru"
         update.message.reply_text(
             "Здравствуй! Я бот, который помогает учить английский. Я могу переводить для вас любые слова и фразы, "
@@ -90,7 +91,7 @@ def start_dialogue(bot, update, user_data):
 
         return TRANSLATE
 
-    elif update.message.text == "английский":
+    elif update.message.text.lower() == "английский":
         user_data["lang_spoken"] = "en"
         update.message.reply_text(
             "Hello! I'm a bot that is constructed for learning English. I can translate any word or phrase for you, "
@@ -152,7 +153,7 @@ def translate_handling(bot, update, user_data):
         user_data["current_word"] = text_to_translate
         user_data["current_translation"] = translation.split("\n\n")[0]
 
-    get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
+    get_translate = text_to_ogg(user_data["current_word"], 'en')
     bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
 
     if user_data["lang_spoken"] == "ru":
@@ -197,7 +198,7 @@ def voice_translate_handling(bot, update, user_data):
             user_data["current_word"] = text_to_translate
             user_data["current_translation"] = translation.split("\n\n")[0]
 
-        get_translate = text_to_ogg(user_data["current_word"], 'ru' if user_data["lang_spoken"] == 'en' else 'en')
+        get_translate = text_to_ogg(user_data["current_word"], 'en')
         bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
 
         if user_data["lang_spoken"] == "ru":
@@ -317,12 +318,12 @@ def change_lang(bot, update):
 
 
 def lang_changed(bot, update, user_data):
-    if update.message.text == "русский":
+    if update.message.text.lower() == "русский":
         user_data["lang_spoken"] = "ru"
         update.message.reply_text(
             "Язык был сменен на русский."
         )
-    elif update.message.text == "английский":
+    elif update.message.text.lower() == "английский":
         user_data["lang_spoken"] = "en"
         update.message.reply_text(
             "The language has been changed to English."
@@ -527,36 +528,82 @@ def translation_word_training(bot, update, user_data):
 
 
 def audio_training(bot, update, user_data):
-    pass
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    records = [record for record in data_base.select_uncompleted_words()]
+    item = random.choice(records)
+    word, translation = item[0], item[1]
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Введите произнесенное слово:"
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Type the following word:"
+        )
+
+    get_translate = text_to_ogg(word, 'en')
+    bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
+
+    user_data["current_answer"] = word
+    user_data["current_word"] = word
+    user_data["current_translation"] = translation
+    data_base.close()
 
 
 def construct_word_training(bot, update, user_data):
-    pass
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    records = [record for record in data_base.select_uncompleted_words()]
+    item = random.choice(records)
+    word, translation = item[0], item[1]
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Составьте слово из пермешанных букв:"
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Collect the word from the mixed letters:"
+        )
+
+    user_data["current_answer"] = word
+    user_data["current_word"] = word
+    user_data["current_translation"] = translation
+
+    word = list(word)
+    random.shuffle(word)
+    update.message.reply_text("".join(word))
+
+    data_base.close()
 
 
 def check_answer(bot, update, user_data):
     data_base = DataBase(update.message.from_user.id)
     data_base.create_table()
 
-    if update.message.text == user_data["current_answer"]:
+    if update.message.text.lower() == user_data["current_answer"]:
         data_base.increment_completion(user_data["current_word"])
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
-                "Верно!"
+                "Верно!\n"
+                "%s - %s" % (user_data["current_word"], user_data["current_translation"])
             )
         elif user_data["lang_spoken"] == "en":
             update.message.reply_text(
-                "Correct!"
+                "Correct!\n"
+                "%s - %s" % (user_data["current_word"], user_data["current_translation"])
             )
 
     else:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
-                "Неверно!"
+                "Неверно!\n"
+                "%s - %s" % (user_data["current_word"], user_data["current_translation"])
             )
         elif user_data["lang_spoken"] == "en":
             update.message.reply_text(
-                "Wrong!"
+                "Wrong!\n"
+                "%s - %s" % (user_data["current_word"], user_data["current_translation"])
             )
 
     trainings_list(bot, update, user_data)
