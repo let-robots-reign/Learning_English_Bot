@@ -51,6 +51,7 @@ def ogg_to_text(file):
         headers=headers,
         data=data
     )
+    #print(response.content)
     root = ET.fromstring(response.content)
     return root[0].text
 
@@ -74,11 +75,11 @@ def text_to_ogg(text, lang):
 
 def upload_file(filename, disk_path):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources/upload?path={}&overwrite=true'.format(disk_path)
-    headers = {'Authorization':'OAuth AQAAAAAZQEWDAATv8dNapIbiAUA6l-vaZFXrR8g'.format(DISK_TOKEN)}
+    headers = {'Authorization':'OAuth {}'.format(DISK_TOKEN)}
     x = requests.get(host_name, headers=headers)
     href = x.json()['href']
     x = requests.put(href, files={'file':open(filename, 'rb')})
-    return x
+    return bool(x)
 
 def get_file(filename):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources/download?path={}'.format(filename)
@@ -88,4 +89,16 @@ def get_file(filename):
     print(x.text)
     href = x.json()['href']
     x = requests.get(href)
-    print(x.text)
+    return x.content
+
+def delete(filename):
+    host_name = 'https://cloud-api.yandex.net/v1/disk/resources?path='.format(filename)
+    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+    x = requests.delete(host_name, headers=headers)
+    return bool(x)
+
+def get_files_list():
+    host_name='https://cloud-api.yandex.net/v1/disk/resources/files'
+    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+    x = requests.get(host_name, headers=headers)
+    return x.json()
