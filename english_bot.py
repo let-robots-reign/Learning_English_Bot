@@ -72,7 +72,7 @@ def setting_up(bot, update):
 
 
 def start_dialogue(bot, update, user_data):
-    if update.message.text == "русский":
+    if update.message.text.lower() == "русский":
         user_data["lang_spoken"] = "ru"
         update.message.reply_text(
             "Здравствуй! Я бот, который помогает учить английский. Я могу переводить для вас любые слова и фразы, "
@@ -91,7 +91,7 @@ def start_dialogue(bot, update, user_data):
 
         return TRANSLATE
 
-    elif update.message.text == "английский":
+    elif update.message.text.lower() == "английский":
         user_data["lang_spoken"] = "en"
         update.message.reply_text(
             "Hello! I'm a bot that is constructed for learning English. I can translate any word or phrase for you, "
@@ -318,12 +318,12 @@ def change_lang(bot, update):
 
 
 def lang_changed(bot, update, user_data):
-    if update.message.text == "русский":
+    if update.message.text.lower() == "русский":
         user_data["lang_spoken"] = "ru"
         update.message.reply_text(
             "Язык был сменен на русский."
         )
-    elif update.message.text == "английский":
+    elif update.message.text.lower() == "английский":
         user_data["lang_spoken"] = "en"
         update.message.reply_text(
             "The language has been changed to English."
@@ -552,7 +552,29 @@ def audio_training(bot, update, user_data):
 
 
 def construct_word_training(bot, update, user_data):
-    pass
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    records = [record for record in data_base.select_uncompleted_words()]
+    item = random.choice(records)
+    word, translation = item[0], item[1]
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Составьте слово из пермешанных букв:"
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Collect the word from the mixed letters:"
+        )
+
+    user_data["current_answer"] = word
+    user_data["current_word"] = word
+    user_data["current_translation"] = translation
+
+    word = list(word)
+    random.shuffle(word)
+    update.message.reply_text("".join(word))
+
+    data_base.close()
 
 
 def check_answer(bot, update, user_data):
