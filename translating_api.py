@@ -51,7 +51,6 @@ def ogg_to_text(file):
         headers=headers,
         data=data
     )
-    #print(response.content)
     root = ET.fromstring(response.content)
     return root[0].text
 
@@ -65,7 +64,9 @@ def text_to_ogg(text, lang):
             "text": text,
             "format": "opus",
             "lang": lang,
-            "speaker": "oksana"
+            "speaker": "oksana",
+            "speed": 0.8,
+            "emotion": "good"
         }
     )
     voice_file = "output_voice.ogg"
@@ -73,32 +74,28 @@ def text_to_ogg(text, lang):
         file.write(response.content)
     return voice_file
 
+
 def upload_file(filename, disk_path):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources/upload?path={}&overwrite=true'.format(disk_path)
-    headers = {'Authorization':'OAuth {}'.format(DISK_TOKEN)}
-    x = requests.get(host_name, headers=headers)
-    href = x.json()['href']
-    x = requests.put(href, files={'file':open(filename, 'rb')})
-    return bool(x)
+    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+    href = requests.get(host_name, headers=headers).json()['href']
+    return bool(requests.put(href, files={'file': open(filename, 'rb')}))
+
 
 def get_file(filename):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources/download?path={}'.format(filename)
     headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-    x = requests.get(host_name, headers=headers)
-    print(x.content)
-    print(x.text)
-    href = x.json()['href']
-    x = requests.get(href)
-    return x.content
+    href = requests.get(host_name, headers=headers).json()['href']
+    return requests.get(href).content
+
 
 def delete(filename):
     host_name = 'https://cloud-api.yandex.net/v1/disk/resources?path='.format(filename)
     headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-    x = requests.delete(host_name, headers=headers)
-    return bool(x)
+    return bool(requests.delete(host_name, headers=headers))
+
 
 def get_files_list():
     host_name='https://cloud-api.yandex.net/v1/disk/resources/files'
     headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-    x = requests.get(host_name, headers=headers)
-    return x.json()
+    return requests.get(host_name, headers=headers).json()
