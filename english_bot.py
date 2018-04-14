@@ -76,17 +76,19 @@ def start_dialogue(bot, update, user_data):
         user_data["lang_spoken"] = "ru"
         update.message.reply_text(
             "Здравствуй! Я бот, который помогает учить английский. Я могу переводить для вас любые слова и фразы, "
-            "а позже вы можете добавлять их в свой личный словарь, после чего тренировать с помощью "
+            "которые вы мне пришлете. Вы можете добавлять слова в свой личный словарь и тренировать с помощью "
             "различных упражнений.\n"
-            "Список и описание упражнений можно посмотреть, вызвав команду /train_list. "
+            "Список и описание упражнений можно посмотреть, вызвав команду /train_list.\n"
+            "Сменить язык можно командой /change_lang.\n"
             "Вы можете все стереть и начать заново с помощью команды /reset.\n"
             "Давайте начнем!"
         )
         update.message.reply_text(
             'Чтобы передать мне слово или фразу на перевод, напишите мне "переведи (мне) / translate %слово%" '
             'либо же просто "%слово%". Также вы можете прислать мне голосовое сообщение со словом. '
-            'После этого вы сможете выбрать, добавлять ли слово в ваш словарь. '
-            'Чтобы посмотреть последние добавленные слова, введите /show_dict.'
+            'После этого вы сможете выбрать, добавлять ли слово в ваш словарь.\n'
+            'Чтобы посмотреть последние добавленные слова, введите /show_dict.\n'
+            'Вы можете удалить слово из словаря с помощью команды /delete %слово%.'
         )
 
         return TRANSLATE
@@ -94,18 +96,19 @@ def start_dialogue(bot, update, user_data):
     elif update.message.text.lower() == "английский":
         user_data["lang_spoken"] = "en"
         update.message.reply_text(
-            "Hello! I'm a bot that is constructed for learning English. I can translate any word or phrase for you, "
-            "and after that you can add it to your dictionary and learn with several types of trainings "
-            "whenever you want.\n"
-            "You can look up the list of trainings via /train_list command. "
+            "Hello! I'm a bot that is constructed for learning English. I can translate any word or phrase "
+            "that you type. You can add them to your dictionary and learn with several types of trainings.\n"
+            "You can look up the list of trainings via /train_list command.\n"
+            "The command /change_lang changes the current language.\n"
             "Also, you can reset all your data and start from the beginning using /reset command.\n"
             "Let's get started!"
         )
         update.message.reply_text(
             'To transfer a word for translation, write "переведи (мне) / translate %word%" or just "%word%". '
             'In addition, you can send me a voice message with the word. '
-            'Afterwards, you can decide whether you want to add it to your dictionary or not. '
-            'To overview last added words, you can type /show_dict.'
+            'Afterwards, you can decide whether you want to add it to your dictionary or not.\n'
+            'To overview last added words, you can type /show_dict.\n'
+            'You can delete a word from your dictionary using /delete %word%.'
         )
 
         return TRANSLATE
@@ -338,7 +341,7 @@ def trainings_list(bot, update, user_data):
     if not data_base.select_uncompleted_words():
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
-                "Вы не можете тренировать слова, так как ваш словарь пуст, либо же вы уже выучили все слова"
+                "Вы не можете тренировать слова, так как ваш словарь пуст, либо же вы уже выучили все слова."
             )
         elif user_data["lang_spoken"] == "en":
             update.message.reply_text(
@@ -625,8 +628,39 @@ def reset(bot, update, user_data):
         update.message.reply_text(
             "Your dictionary has been erased. You can start again using /start command."
         )
+    data_base.close()
 
     return ConversationHandler.END
+
+
+def help(bot, update, user_data):
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Список и описание упражнений можно посмотреть, вызвав команду /train_list.\n"
+            "Сменить язык можно командой /change_lang.\n"
+            "Вы можете все стереть и начать заново с помощью команды /reset.\n"
+            "Чтобы передать мне слово или фразу на перевод, напишите мне 'переведи (мне) / translate %слово%'"
+            "либо же просто '%слово%'. Также вы можете прислать мне голосовое сообщение со словом. "
+            "После этого вы сможете выбрать, добавлять ли слово в ваш словарь.\n"
+            "Чтобы посмотреть последние добавленные слова, введите /show_dict.\n"
+            "Вы можете удалить слово из словаря с помощью команды /delete %слово%."
+        )
+
+        return TRANSLATE
+
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "You can look up the list of trainings via /train_list command.\n"
+            "The command /change_lang changes the current language.\n"
+            "Also, you can reset all your data and start from the beginning using /reset command.\n"
+            "To transfer a word for translation, write 'переведи (мне) / translate %word%' or just '%word%'. "
+            "In addition, you can send me a voice message with the word. "
+            "Afterwards, you can decide whether you want to add it to your dictionary or not.\n"
+            "To overview last added words, you can type /show_dict.\n"
+            "You can delete a word from your dictionary using /delete %word%."
+        )
+
+        return TRANSLATE
 
 
 def main():
@@ -643,7 +677,8 @@ def main():
                         CommandHandler("show_dict", show_dict, pass_user_data=True),
                         CommandHandler("change_lang", change_lang),
                         CommandHandler("delete", delete_word, pass_args=True, pass_user_data=True),
-                        CommandHandler("train_list", trainings_list, pass_user_data=True)],
+                        CommandHandler("train_list", trainings_list, pass_user_data=True),
+                        CommandHandler("help", help, pass_user_data=True)],
 
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)],
 
