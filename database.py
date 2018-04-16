@@ -32,7 +32,7 @@ class DataBase:
         return self.cursor.fetchall()
 
     def delete_word(self, word):
-        self.cursor.execute("DELETE FROM user_%s WHERE english_word = (?)" % self.user_id, word)
+        self.cursor.execute("DELETE FROM user_%s WHERE english_word = (?)" % self.user_id, (word,))
         self.conn.commit()
 
     def delete_dict(self):

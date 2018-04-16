@@ -1,6 +1,6 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, ChatAction
-from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file
+from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file, get_definition
 from database import *
 import threading
 import logging
@@ -47,7 +47,7 @@ markup = ReplyKeyboardMarkup(lang_keyboard, one_time_keyboard=True)
 
 trainings_keyboard = [["слово-перевод", "перевод-слово"],
                       ["аудирование", "собери слово"],
-                      ["выход из раздела"]]
+                      ["угадай слово", "выход из раздела"]]
 train_markup = ReplyKeyboardMarkup(trainings_keyboard, one_time_keyboard=True)
 
 
@@ -380,6 +380,9 @@ def choose_training(bot, update, user_data):
     elif update.message.text.lower() == "собери слово":
         construct_word_training(bot, update, user_data)
         return ANSWER
+    elif update.message.text.lower() == "угадай слово":
+        guess_word_training(bot, update, user_data)
+        return ANSWER
     elif update.message.text.lower() == "выход из раздела":
         return TRANSLATE
     else:
@@ -409,7 +412,7 @@ def delete_word(bot, update, args, user_data):
                 "You haven't transferred the word for deletion.\n"
                 "If you want to delete all the words from dictionary, use /reset."
             )
-    elif not any(''.join(args) == row[0] for row in data_base.read_dict()):
+    elif not any(' '.join(args) == row[0] for row in data_base.read_dict()):
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
                 "Этого слова нет в вашем словаре."
@@ -419,7 +422,7 @@ def delete_word(bot, update, args, user_data):
                 "You don't have this word in your dictionary."
             )
     else:
-        data_base.delete_word(args)
+        data_base.delete_word(' '.join(args))
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
                 "Слово было удалено из вашего словаря."
@@ -449,19 +452,18 @@ def word_translation_training(bot, update, user_data):
     elif 2 <= translation_position <= 3:
         options_keyboard[1][translation_position - 2] = translation
 
+    temp_preset_words = [item for item in preset_words if item not in records]
+
     for i in range(len(options_keyboard)):
         for j in range(len(options_keyboard[i])):
             if not options_keyboard[i][j]:
                 if len(records) >= 3:  # если есть чем заполнить клавиатуру из словаря пользователя
-                    fill_record = random.choice(records)[1]
+                    fill_record = random.choice(records)
+                    del records[records.index((fill_record[0], fill_record[1]))]
                 else:  # иначе заполняем словами из предустановленного списка
-                    fill_record = random.choice(preset_words)[1]
-                while fill_record in options_keyboard[0] or fill_record in options_keyboard[1]:  # избегаем повторений
-                    if len(records) >= 3:  # аналогично
-                        fill_record = random.choice(records)[1]
-                    else:
-                        fill_record = random.choice(preset_words)[1]
-                options_keyboard[i][j] = fill_record
+                    fill_record = random.choice(temp_preset_words)
+                    del temp_preset_words[temp_preset_words.index((fill_record[0], fill_record[1]))]
+                options_keyboard[i][j] = fill_record[1]
 
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
@@ -497,19 +499,18 @@ def translation_word_training(bot, update, user_data):
     elif 2 <= word_position <= 3:
         options_keyboard[1][word_position - 2] = word
 
+    temp_preset_words = [item for item in preset_words if item not in records]
+
     for i in range(len(options_keyboard)):
         for j in range(len(options_keyboard[i])):
             if not options_keyboard[i][j]:
                 if len(records) >= 3:  # если есть чем заполнить клавиатуру из словаря пользователя
-                    fill_record = random.choice(records)[0]
+                    fill_record = random.choice(records)
+                    del records[records.index((fill_record[0], fill_record[1]))]
                 else:  # иначе заполняем словами из предустановленного списка
-                    fill_record = random.choice(preset_words)[0]
-                while fill_record in options_keyboard[0] or fill_record in options_keyboard[1]:  # избегаем повторений
-                    if len(records) >= 3:  # аналогично
-                        fill_record = random.choice(records)[0]
-                    else:
-                        fill_record = random.choice(preset_words)[0]
-                options_keyboard[i][j] = fill_record
+                    fill_record = random.choice(preset_words)
+                    del temp_preset_words[temp_preset_words.index((fill_record[0], fill_record[1]))]
+                options_keyboard[i][j] = fill_record[0]
 
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
@@ -577,6 +578,28 @@ def construct_word_training(bot, update, user_data):
     random.shuffle(word)
     update.message.reply_text("".join(word))
 
+    data_base.close()
+
+
+def guess_word_training(bot, update, user_data):
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    records = [record for record in data_base.select_uncompleted_words()]
+    item = random.choice(records)
+    word, translation = item[0], item[1]
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Угадайте, о каком слове идет речь: "
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Guess which word I'm talking about: "
+        )
+    update.message.reply_text(get_definition(word, "en"))
+
+    user_data["current_answer"] = word
+    user_data["current_word"] = word
+    user_data["current_translation"] = translation
     data_base.close()
 
 
@@ -664,7 +687,7 @@ def help(bot, update, user_data):
 
 
 def main():
-    updater = Updater(TOKEN)
+    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'socks5://123.201.110.194:1080'})
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
