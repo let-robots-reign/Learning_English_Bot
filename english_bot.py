@@ -679,7 +679,7 @@ def definition_train(bot, update, user_data):
         )
 
     user_data["current_answer"] = word
-    user_data["current_word"] = word
+    user_data["current_word"] = definition
     user_data["current_translation"] = word
     data_base.close()
 
