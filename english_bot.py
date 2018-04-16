@@ -1,6 +1,6 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, ChatAction
-from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file
+from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file, get_definition
 from database import *
 import threading
 import logging
@@ -47,7 +47,7 @@ markup = ReplyKeyboardMarkup(lang_keyboard, one_time_keyboard=True)
 
 trainings_keyboard = [["слово-перевод", "перевод-слово"],
                       ["аудирование", "собери слово"],
-                      ["выход из раздела"]]
+                      ["по толкованию", "выход из раздела"]]
 train_markup = ReplyKeyboardMarkup(trainings_keyboard, one_time_keyboard=True)
 
 
@@ -380,6 +380,9 @@ def choose_training(bot, update, user_data):
     elif update.message.text.lower() == "собери слово":
         construct_word_training(bot, update, user_data)
         return ANSWER
+    elif update.message.text.lower() == "по толкованию":
+        definition_train(bot, update, user_data)
+        return ANSWER
     elif update.message.text.lower() == "выход из раздела":
         return TRANSLATE
     else:
@@ -632,6 +635,54 @@ def reset(bot, update, user_data):
 
     return ConversationHandler.END
 
+def definition_train(bot, update, user_data):
+    data_base = DataBase(update.message.from_user.id)
+    data_base.create_table()
+    records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
+    item = random.choice(records)  # выбирается случайное слово
+    word = item[0]  # само слово и его перевод
+    definition = get_definition(word, 'en')
+    translation_position = random.randint(0, 3)  # позиция правильного перевода в options_keyboard
+    options_keyboard = [["", ""],
+                        ["", ""]]
+    options_markup = ReplyKeyboardMarkup(options_keyboard, one_time_keyboard=True)
+    if 0 <= translation_position <= 1:
+        options_keyboard[0][translation_position] = word
+    elif 2 <= translation_position <= 3:
+        options_keyboard[1][translation_position - 2] = word
+
+    for i in range(len(options_keyboard)):
+        for j in range(len(options_keyboard[i])):
+            if not options_keyboard[i][j]:
+                if len(records) >= 3:  # если есть чем заполнить клавиатуру из словаря пользователя
+                    fill_record = random.choice(records)[0]
+                else:  # иначе заполняем словами из предустановленного списка
+                    fill_record = random.choice(preset_words)[0]
+                while fill_record in options_keyboard[0] or fill_record in options_keyboard[1]:  # избегаем повторений
+                    if len(records) >= 3:  # аналогично
+                        fill_record = random.choice(records)[1]
+                    else:
+                        fill_record = random.choice(preset_words)[1]
+                options_keyboard[i][j] = fill_record
+
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Выберите слово, значение которого:\n"
+            "{}".format(definition),
+            reply_markup=options_markup
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Choose the word which meaning:\n"
+            "{}".format(definition),
+            reply_markup=options_markup
+        )
+
+    user_data["current_answer"] = word
+    user_data["current_word"] = word
+    user_data["current_translation"] = word
+    data_base.close()
+
 
 def help(bot, update, user_data):
     if user_data["lang_spoken"] == "ru":
@@ -664,7 +715,7 @@ def help(bot, update, user_data):
 
 
 def main():
-    updater = Updater(TOKEN)
+    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'socks5://123.201.110.194:1080'})
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
