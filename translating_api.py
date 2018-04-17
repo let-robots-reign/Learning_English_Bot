@@ -100,7 +100,6 @@ def get_files_list():
     headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
     return requests.get(host_name, headers=headers).json()
 
-
 def get_definition(word, lang):
     oxford_template = 'https://od-api.oxforddictionaries.com/api/v1/entries/{}/{}'.format(lang, word)
     headers = {
