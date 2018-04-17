@@ -24,7 +24,7 @@ class DataBase:
         current_completion = self.cursor.execute("SELECT completion FROM user_%s WHERE english_word = (?)"
                                                  % self.user_id, (word,)).fetchall()
         self.cursor.execute("UPDATE user_%s SET completion = (?) WHERE english_word = (?)"
-                            % self.user_id, (current_completion[0][0] + 25, word))
+                            % self.user_id, (current_completion[0][0] + 20, word))
         self.conn.commit()
 
     def read_dict(self):

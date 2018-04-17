@@ -595,7 +595,19 @@ def guess_word_training(bot, update, user_data):
         update.message.reply_text(
             "Guess which word I'm talking about: "
         )
-    update.message.reply_text(get_definition(word, "en"))
+
+    if get_definition(word, "en"):
+        update.message.reply_text(get_definition(word, "en"))
+    else:
+        if user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "Sorry, I don't have a definition for the word '%s'." % word
+            )
+        elif user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "К сожалению, я не могу дать определение слову '%s'" % word
+            )
+        user_data["current_answer"] = "no answer"
 
     user_data["current_answer"] = word
     user_data["current_word"] = word
@@ -604,6 +616,9 @@ def guess_word_training(bot, update, user_data):
 
 
 def check_answer(bot, update, user_data):
+    if user_data["current_answer"] == "no answer":
+        return TRANSLATE
+
     data_base = DataBase(update.message.from_user.id)
     data_base.create_table()
 
@@ -687,7 +702,8 @@ def help(bot, update, user_data):
 
 
 def main():
-    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'socks5://123.201.110.194:1080'})
+    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'https://18.188.47.231:3128',
+                                             'read_timeout': 10, 'connect_timeout': 10})
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(

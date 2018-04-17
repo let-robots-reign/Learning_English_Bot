@@ -108,5 +108,8 @@ def get_definition(word, lang):
         "app_id": OED_APP_ID,
         "app_key": OED_KEY
     }
-    res = requests.get(oxford_template, headers=headers).json()
+    res = requests.get(oxford_template, headers=headers)
+    if not res:
+        return None
+    res = res.json()
     return res['results'][0]['lexicalEntries'][0]['entries'][0]['senses'][0]['definitions'][0]
