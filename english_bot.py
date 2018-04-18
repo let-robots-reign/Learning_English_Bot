@@ -60,6 +60,7 @@ def error(bot, update, error):
     bot.send_message(chat_id=590585095, text='Update "%s" caused error "%s"' % (update, error))
 
 
+
 def setting_up(bot, update):
     try:
         data_base = DataBase(update.message.from_user.id)
