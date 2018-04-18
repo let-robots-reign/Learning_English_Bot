@@ -652,7 +652,6 @@ def guess_word_training(bot, update, user_data):
 
 
 def check_answer(bot, update, user_data):
-=======
     if user_data["current_answer"] == "no answer":
         return TRANSLATE
     try:
