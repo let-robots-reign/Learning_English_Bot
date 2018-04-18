@@ -60,9 +60,14 @@ def error(bot, update, error):
     bot.send_message(chat_id=590585095, text='Update "%s" caused error "%s"' % (update, error))
 
 
+
 def setting_up(bot, update):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return TRANSLATE
     update.message.reply_text(
         "Выберите язык, на котором я буду с вами говорить."
         "\n\n"
@@ -229,7 +234,7 @@ def show_dict(bot, update, user_data):
         dictionary = data_base.read_dict()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     if not dictionary:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -266,7 +271,7 @@ def adding_to_dict(bot, update, user_data):
             data_base.create_table()
         except:
             update.message.reply_text('Sorry, error while reading data base')
-            return
+            return TRANSLATE
         if (user_data["current_word"].lower(), user_data["current_translation"].lower()) \
                 in [(item[0], item[1]) for item in data_base.read_dict()]:
             if user_data["lang_spoken"] == "ru":
@@ -351,7 +356,7 @@ def trainings_list(bot, update, user_data):
         data_base.create_table()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     if not data_base.select_uncompleted_words():
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -418,7 +423,7 @@ def delete_word(bot, update, args, user_data):
         data_base.create_table()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     if not args:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -461,7 +466,7 @@ def word_translation_training(bot, update, user_data):
         data_base.create_table()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
     item = random.choice(records)  # выбирается случайное слово
     word, translation = item[0], item[1]  # само слово и его перевод
@@ -512,7 +517,7 @@ def translation_word_training(bot, update, user_data):
         data_base.create_table()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
     item = random.choice(records)  # выбирается случайное слово
     word, translation = item[0], item[1]  # само слово и его перевод
@@ -563,7 +568,7 @@ def audio_training(bot, update, user_data):
         data_base.create_table()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     records = [record for record in data_base.select_uncompleted_words()]
     item = random.choice(records)
     word, translation = item[0], item[1]
@@ -593,7 +598,8 @@ def construct_word_training(bot, update, user_data):
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
     except:
-        return
+        update.message.reply_text('Sorry, error while reading data base')
+        return TRANSLATE
     records = [record for record in data_base.select_uncompleted_words()]
     item = random.choice(records)
     word, translation = item[0], item[1]
@@ -618,30 +624,31 @@ def construct_word_training(bot, update, user_data):
 
 
 def guess_word_training(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return TRANSLATE
     records = [record for record in data_base.select_uncompleted_words()]
     item = random.choice(records)
     word, translation = item[0], item[1]
+    s = ''
     if user_data["lang_spoken"] == "ru":
-        update.message.reply_text(
-            "Угадайте, о каком слове идет речь: "
-        )
+        s += "Угадайте, о каком слове идет речь: \n"
     elif user_data["lang_spoken"] == "en":
-        update.message.reply_text(
-            "Guess which word I'm talking about: "
-        )
+            s += "Guess which word I'm talking about: \n"
 
     if get_definition(word, "en"):
-        update.message.reply_text(get_definition(word, "en"))
+        update.message.reply_text(s + get_definition(word, "en"))
     else:
         if user_data["lang_spoken"] == "en":
             update.message.reply_text(
-                "Sorry, I don't have a definition for the word '%s'." % word
+                s + "Sorry, I don't have a definition for the word '%s'." % word
             )
         elif user_data["lang_spoken"] == "ru":
             update.message.reply_text(
-                "К сожалению, я не могу дать определение слову '%s'" % word
+                s + "К сожалению, я не могу дать определение слову '%s'" % word
             )
         user_data["current_answer"] = "no answer"
 
@@ -652,7 +659,6 @@ def guess_word_training(bot, update, user_data):
 
 
 def check_answer(bot, update, user_data):
-=======
     if user_data["current_answer"] == "no answer":
         return TRANSLATE
     try:
@@ -660,7 +666,7 @@ def check_answer(bot, update, user_data):
         data_base.create_table()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
 
     if update.message.text.lower() == user_data["current_answer"]:
         data_base.increment_completion(user_data["current_word"])
@@ -701,7 +707,7 @@ def reset(bot, update, user_data):
         data_base.delete_dict()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
             "Ваш словарь был удален. Вы можете начать заново с помощью команды /start."
@@ -720,7 +726,7 @@ def definition_train(bot, update, user_data):
         data_base.create_table()
     except:
         update.message.reply_text('Sorry, error while reading data base')
-        return
+        return TRANSLATE
     records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
     item = random.choice(records)  # выбирается случайное слово
     word = item[0]  # само слово и его перевод
@@ -803,7 +809,7 @@ def help(bot, update, user_data):
 
 
 def main():
-    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'https://18.188.47.231:3128',
+    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'http://41.160.118.226:8080',
                                              'read_timeout': 10, 'connect_timeout': 10})
     dp = updater.dispatcher
 
