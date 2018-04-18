@@ -108,19 +108,19 @@ def delete(filename):
 
 
 def get_files_list():
-    host_name='https://cloud-api.yandex.net/v1/disk/resources/files'
+    host_name = 'https://cloud-api.yandex.net/v1/disk/resources/files'
     headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
     return requests.get(host_name, headers=headers).json()
 
 def get_definition(word, lang):
     try:
-        x = 'https://od-api.oxforddictionaries.com/api/v1/entries/{}/{}'.format(lang, word)
+        oxford_template = 'https://od-api.oxforddictionaries.com/api/v1/entries/{}/{}'.format(lang, word)
         headers={
             "Accept": "application/json",
             "app_id": OED_APP_ID,
             "app_key": OED_KEY
         }
-        res = requests.get(x, headers=headers)
+        res = requests.get(oxford_template, headers=headers)
         res = res.json()
         return res['results'][0]['lexicalEntries'][0]['entries'][0]['senses'][0]['definitions'][0]
     except:
