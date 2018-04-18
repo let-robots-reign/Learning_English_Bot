@@ -623,25 +623,22 @@ def guess_word_training(bot, update, user_data):
     records = [record for record in data_base.select_uncompleted_words()]
     item = random.choice(records)
     word, translation = item[0], item[1]
+    s = ''
     if user_data["lang_spoken"] == "ru":
-        update.message.reply_text(
-            "Угадайте, о каком слове идет речь: "
-        )
+        s += "Угадайте, о каком слове идет речь: \n"
     elif user_data["lang_spoken"] == "en":
-        update.message.reply_text(
-            "Guess which word I'm talking about: "
-        )
+            s += "Guess which word I'm talking about: \n"
 
     if get_definition(word, "en"):
-        update.message.reply_text(get_definition(word, "en"))
+        update.message.reply_text(s + get_definition(word, "en"))
     else:
         if user_data["lang_spoken"] == "en":
             update.message.reply_text(
-                "Sorry, I don't have a definition for the word '%s'." % word
+                s + "Sorry, I don't have a definition for the word '%s'." % word
             )
         elif user_data["lang_spoken"] == "ru":
             update.message.reply_text(
-                "К сожалению, я не могу дать определение слову '%s'" % word
+                s + "К сожалению, я не могу дать определение слову '%s'" % word
             )
         user_data["current_answer"] = "no answer"
 
@@ -802,7 +799,7 @@ def help(bot, update, user_data):
 
 
 def main():
-    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'https://18.188.47.231:3128',
+    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'http://41.160.118.226:8080',
                                              'read_timeout': 10, 'connect_timeout': 10})
     dp = updater.dispatcher
 
