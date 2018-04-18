@@ -12,9 +12,13 @@ import os
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-base_file = open('users.db', 'wb')
-base_file.write(get_file('/english_learning_data/users.db'))
-base_file.close()
+try:
+    base_file = open('users.db', 'wb')
+    base_file.write(get_file('/english_learning_data/users.db'))
+    base_file.close()
+except:
+    print('Data base was not loaded')
+    sys.exit(1)
 
 
 def save_file():
@@ -157,7 +161,8 @@ def translate_handling(bot, update, user_data):
         user_data["current_translation"] = translation.split("\n\n")[0]
 
     get_translate = text_to_ogg(user_data["current_word"], 'en')
-    bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
+    if get_translate:
+        bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
 
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
@@ -175,7 +180,6 @@ def translate_handling(bot, update, user_data):
 
 def voice_translate_handling(bot, update, user_data):
     bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING)
-
     file_id = update.message.voice.file_id
     new_file = bot.get_file(file_id)
     new_file.download('input_voice.ogg')
@@ -219,9 +223,13 @@ def voice_translate_handling(bot, update, user_data):
 
 
 def show_dict(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
-    dictionary = data_base.read_dict()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+        dictionary = data_base.read_dict()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
     if not dictionary:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -253,10 +261,12 @@ def show_dict(bot, update, user_data):
 
 def adding_to_dict(bot, update, user_data):
     if update.message.text.lower() == "да" or update.message.text.lower() == "yes":
-
-        data_base = DataBase(update.message.from_user.id)
-        data_base.create_table()
-
+        try:
+            data_base = DataBase(update.message.from_user.id)
+            data_base.create_table()
+        except:
+            update.message.reply_text('Sorry, error while reading data base')
+            return
         if (user_data["current_word"].lower(), user_data["current_translation"].lower()) \
                 in [(item[0], item[1]) for item in data_base.read_dict()]:
             if user_data["lang_spoken"] == "ru":
@@ -336,8 +346,12 @@ def lang_changed(bot, update, user_data):
 
 
 def trainings_list(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
     if not data_base.select_uncompleted_words():
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -399,8 +413,12 @@ def choose_training(bot, update, user_data):
 
 
 def delete_word(bot, update, args, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
     if not args:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
@@ -438,8 +456,12 @@ def delete_word(bot, update, args, user_data):
 
 
 def word_translation_training(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
     records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
     item = random.choice(records)  # выбирается случайное слово
     word, translation = item[0], item[1]  # само слово и его перевод
@@ -485,8 +507,12 @@ def word_translation_training(bot, update, user_data):
 
 
 def translation_word_training(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
     records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
     item = random.choice(records)  # выбирается случайное слово
     word, translation = item[0], item[1]  # само слово и его перевод
@@ -532,8 +558,12 @@ def translation_word_training(bot, update, user_data):
 
 
 def audio_training(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
     records = [record for record in data_base.select_uncompleted_words()]
     item = random.choice(records)
     word, translation = item[0], item[1]
@@ -545,9 +575,12 @@ def audio_training(bot, update, user_data):
         update.message.reply_text(
             "Type the following word:"
         )
-
-    get_translate = text_to_ogg(word, 'en')
-    bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
+    try:
+        get_translate = text_to_ogg(word, 'en')
+        bot.send_voice(chat_id=update.message.chat_id, voice=open(get_translate, 'rb'))
+    except:
+        bot.send_message(chat_id=update.message.chat_id, text='Exception while loading audio file')
+        return
 
     user_data["current_answer"] = word
     user_data["current_word"] = word
@@ -556,8 +589,11 @@ def audio_training(bot, update, user_data):
 
 
 def construct_word_training(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        return
     records = [record for record in data_base.select_uncompleted_words()]
     item = random.choice(records)
     word, translation = item[0], item[1]
@@ -616,11 +652,15 @@ def guess_word_training(bot, update, user_data):
 
 
 def check_answer(bot, update, user_data):
+=======
     if user_data["current_answer"] == "no answer":
         return TRANSLATE
-
-    data_base = DataBase(update.message.from_user.id)
-    data_base.create_table()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
 
     if update.message.text.lower() == user_data["current_answer"]:
         data_base.increment_completion(user_data["current_word"])
@@ -656,8 +696,12 @@ def check_answer(bot, update, user_data):
 
 
 def reset(bot, update, user_data):
-    data_base = DataBase(update.message.from_user.id)
-    data_base.delete_dict()
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.delete_dict()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
     if user_data["lang_spoken"] == "ru":
         update.message.reply_text(
             "Ваш словарь был удален. Вы можете начать заново с помощью команды /start."
@@ -669,6 +713,63 @@ def reset(bot, update, user_data):
     data_base.close()
 
     return ConversationHandler.END
+
+def definition_train(bot, update, user_data):
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return
+    records = [record for record in data_base.select_uncompleted_words()]  # список слов для тренировки
+    item = random.choice(records)  # выбирается случайное слово
+    word = item[0]  # само слово и его перевод
+    try:
+        definition = get_definition(word, 'en')
+        assert definition is not None
+    except:
+        update.message.reply_text('error while getting word definition')
+        return
+    translation_position = random.randint(0, 3)  # позиция правильного перевода в options_keyboard
+    options_keyboard = [["", ""],
+                        ["", ""]]
+    options_markup = ReplyKeyboardMarkup(options_keyboard, one_time_keyboard=True)
+    if 0 <= translation_position <= 1:
+        options_keyboard[0][translation_position] = word
+    elif 2 <= translation_position <= 3:
+        options_keyboard[1][translation_position - 2] = word
+
+    for i in range(len(options_keyboard)):
+        for j in range(len(options_keyboard[i])):
+            if not options_keyboard[i][j]:
+                if len(records) >= 3:  # если есть чем заполнить клавиатуру из словаря пользователя
+                    fill_record = random.choice(records)[0]
+                else:  # иначе заполняем словами из предустановленного списка
+                    fill_record = random.choice(preset_words)[0]
+                while fill_record in options_keyboard[0] or fill_record in options_keyboard[1]:  # избегаем повторений
+                    if len(records) >= 3:  # аналогично
+                        fill_record = random.choice(records)[1]
+                    else:
+                        fill_record = random.choice(preset_words)[1]
+                options_keyboard[i][j] = fill_record
+
+    if user_data["lang_spoken"] == "ru":
+        update.message.reply_text(
+            "Выберите слово, значение которого:\n"
+            "{}".format(definition),
+            reply_markup=options_markup
+        )
+    elif user_data["lang_spoken"] == "en":
+        update.message.reply_text(
+            "Choose the word which meaning:\n"
+            "{}".format(definition),
+            reply_markup=options_markup
+        )
+
+    user_data["current_answer"] = word
+    user_data["current_word"] = definition
+    user_data["current_translation"] = word
+    data_base.close()
 
 
 def help(bot, update, user_data):
