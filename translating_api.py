@@ -40,19 +40,22 @@ def detect_lang(text):
 def ogg_to_text(file):
     headers = {'Content-Type': 'audio/ogg;codecs=opus'}
     speech_url = "http://asr.yandex.net/asr_xml"
-    data = open(file, 'rb')
-    response = requests.post(
-        speech_url,
-        params={
-            "key": SPEECHKIT_KEY,
-            "uuid": UUID,
-            "topic": "queries"
-        },
-        headers=headers,
-        data=data
-    )
-    root = ET.fromstring(response.content)
-    return root[0].text
+    try:
+        data = open(file, 'rb')
+        response = requests.post(
+            speech_url,
+            params={
+                "key": SPEECHKIT_KEY,
+                "uuid": UUID,
+                "topic": "queries"
+            },
+            headers=headers,
+            data=data
+        )
+        root = ET.fromstring(response.content)
+        return root[0].text
+    except:
+        return None
 
 
 def text_to_ogg(text, lang):
@@ -69,24 +72,33 @@ def text_to_ogg(text, lang):
             "emotion": "good"
         }
     )
-    voice_file = "output_voice.ogg"
-    with open(voice_file, "wb") as file:
-        file.write(response.content)
-    return voice_file
+    try:
+        voice_file = "output_voice.ogg"
+        with open(voice_file, "wb") as file:
+            file.write(response.content)
+        return voice_file
+    except:
+        return None
 
 
 def upload_file(filename, disk_path):
-    host_name = 'https://cloud-api.yandex.net/v1/disk/resources/upload?path={}&overwrite=true'.format(disk_path)
-    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-    href = requests.get(host_name, headers=headers).json()['href']
-    return bool(requests.put(href, files={'file': open(filename, 'rb')}))
+    try:
+        host_name = 'https://cloud-api.yandex.net/v1/disk/resources/upload?path={}&overwrite=true'.format(disk_path)
+        headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+        href = requests.get(host_name, headers=headers).json()['href']
+        return bool(requests.put(href, files={'file': open(filename, 'rb')}))
+    except:
+        return False
 
 
 def get_file(filename):
-    host_name = 'https://cloud-api.yandex.net/v1/disk/resources/download?path={}'.format(filename)
-    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-    href = requests.get(host_name, headers=headers).json()['href']
-    return requests.get(href).content
+    try:
+        host_name = 'https://cloud-api.yandex.net/v1/disk/resources/download?path={}'.format(filename)
+        headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
+        href = requests.get(host_name, headers=headers).json()['href']
+        return requests.get(href).content
+    except:
+        return None
 
 
 def delete(filename):
@@ -101,12 +113,15 @@ def get_files_list():
     return requests.get(host_name, headers=headers).json()
 
 def get_definition(word, lang):
-    x = 'https://od-api.oxforddictionaries.com/api/v1/entries/{}/{}'.format(lang, word)
-    headers={
-        "Accept": "application/json",
-        "app_id": OED_APP_ID,
-        "app_key": OED_KEY
-    }
-    res = requests.get(x, headers=headers)
-    res = res.json()
-    return res['results'][0]['lexicalEntries'][0]['entries'][0]['senses'][0]['definitions'][0]
+    try:
+        x = 'https://od-api.oxforddictionaries.com/api/v1/entries/{}/{}'.format(lang, word)
+        headers={
+            "Accept": "application/json",
+            "app_id": OED_APP_ID,
+            "app_key": OED_KEY
+        }
+        res = requests.get(x, headers=headers)
+        res = res.json()
+        return res['results'][0]['lexicalEntries'][0]['entries'][0]['senses'][0]['definitions'][0]
+    except:
+        return None
