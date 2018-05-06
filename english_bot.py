@@ -1,8 +1,7 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, ChatAction
-from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file, get_definition
+from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, get_definition
 from postgres import *
-import threading
 import logging
 import random
 import sys
@@ -11,23 +10,6 @@ import os
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-try:
-    base_file = open('users.db', 'wb')
-    base_file.write(get_file('/english_learning_data/users.db'))
-    base_file.close()
-except:
-    print('Data base was not loaded')
-    sys.exit(1)
-
-
-def save_file():
-    threading.Timer(5, save_file).start()
-    upload_file('users.db', '/english_learning_data/users.db')
-
-
-save_file()
-
 
 try:
     with open("tokens.txt", "r", encoding="utf8") as infile:
@@ -58,7 +40,6 @@ train_markup = ReplyKeyboardMarkup(trainings_keyboard, one_time_keyboard=True)
 def error(bot, update, error):
     logger.warning('Update "%s" caused error "%s"', update, error)
     bot.send_message(chat_id=590585095, text='Update "%s" caused error "%s"' % (update, error))
-
 
 
 def setting_up(bot, update):

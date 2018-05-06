@@ -1,9 +1,13 @@
 import psycopg2
+import subprocess
+
+proc = subprocess.Popen('heroku config:get DATABASE_URL -a my-heroku-app', stdout=subprocess.PIPE, shell=True)
+db_url = proc.stdout.read().decode('utf-8').strip() + '?sslmode=require'
 
 
 class DataBase:
     def __init__(self, id):
-        self.conn = psycopg2.connect("")
+        self.conn = psycopg2.connect(db_url)
         self.cursor = self.conn.cursor()
         self.user_id = id
 
