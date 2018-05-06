@@ -1,13 +1,18 @@
 import psycopg2
-import subprocess
+import urllib.parse as urlparse
+import os
 
-proc = subprocess.Popen('heroku config:get DATABASE_URL -a bot-english-teacher', stdout=subprocess.PIPE, shell=True)
-db_url = proc.stdout.read().decode('utf-8').strip() + '?sslmode=require'
+url = urlparse.urlparse(os.environ['DATABASE_URL'])
+dbname = url.path[1:]
+user = url.username
+password = url.password
+host = url.hostname
+port = url.port
 
 
 class DataBase:
     def __init__(self, id):
-        self.conn = psycopg2.connect(db_url)
+        self.conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
         self.cursor = self.conn.cursor()
         self.user_id = id
 
