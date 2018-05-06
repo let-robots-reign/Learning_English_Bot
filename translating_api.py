@@ -2,9 +2,9 @@ import requests
 import os
 import xml.etree.ElementTree as ET
 
-API_KEY, SPEECHKIT_KEY, UUID, DISK_TOKEN, OED_APP_ID, OED_KEY = str(os.getenv(API_KEY)), str(os.getenv(SPEECHKIT_KEY)),\
-                                                                str(os.getenv(UUID)), str(os.getenv(DISK_TOKEN)), \
-                                                                str(os.getenv(OED_APP_ID)), str(os.getenv(OED_KEY))
+API_KEY, SPEECHKIT_KEY, UUID, DISK_TOKEN, OED_APP_ID, OED_KEY = os.environ["API_KEY"], os.environ["SPEECHKIT_KEY"], \
+                                                                os.environ["UUID"], os.environ["DISK_TOKEN"], \
+                                                                os.environ["OED_APP_ID"], os.environ["OED_KEY"]
 
 
 def translator(text, lang):

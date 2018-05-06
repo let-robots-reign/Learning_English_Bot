@@ -11,7 +11,7 @@ import os
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-TOKEN, API_KEY = str(os.getenv(TOKEN)), str(os.getenv(API_KEY))
+TOKEN, API_KEY = os.environ["TOKEN"], os.environ["API_KEY"]
 
 try:
     with open("preset_words.txt", "r", encoding="utf-8-sig") as infile:
