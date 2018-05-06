@@ -30,8 +30,9 @@ class DataBase:
         return self.cursor.fetchall()
 
     def increment_completion(self, word):
-        current_completion = self.cursor.execute("SELECT completion FROM user_{} "
-                                                 "WHERE english_word = %s;".format(self.user_id), (word,)).fetchall()
+        self.cursor.execute("SELECT completion FROM user_{} "
+                            "WHERE english_word = %s;".format(self.user_id), (word,))
+        current_completion = self.cursor.fetchall()
         self.cursor.execute("UPDATE user_{} SET completion = %s WHERE english_word = %s;".format(self.user_id),
                             (str(int(current_completion[0][0]) + 20), word))
         self.conn.commit()
