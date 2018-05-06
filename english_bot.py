@@ -790,8 +790,7 @@ def help(bot, update, user_data):
 
 
 def main():
-    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'http://41.160.118.226:8080',
-                                             'read_timeout': 10, 'connect_timeout': 10})
+    updater = Updater(TOKEN, request_kwargs={'read_timeout': 10, 'connect_timeout': 10})
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
