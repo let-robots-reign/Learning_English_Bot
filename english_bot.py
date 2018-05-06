@@ -11,12 +11,7 @@ import os
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-try:
-    with open("tokens.txt", "r", encoding="utf8") as infile:
-        TOKEN, API_KEY = (line.strip() for line in infile.readlines()[:2])
-except FileNotFoundError:
-    print("Для работы нужен Telegram Token и Yandex Translate Key")
-    sys.exit(1)
+TOKEN, API_KEY = os.environ[TOKEN], os.environ[API_KEY]
 
 try:
     with open("preset_words.txt", "r", encoding="utf-8-sig") as infile:

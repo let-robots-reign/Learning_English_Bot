@@ -1,7 +1,7 @@
 import psycopg2
 import subprocess
 
-proc = subprocess.Popen('heroku config:get DATABASE_URL -a my-heroku-app', stdout=subprocess.PIPE, shell=True)
+proc = subprocess.Popen('heroku config:get DATABASE_URL -a bot-english-teacher', stdout=subprocess.PIPE, shell=True)
 db_url = proc.stdout.read().decode('utf-8').strip() + '?sslmode=require'
 
 
