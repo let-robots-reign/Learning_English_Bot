@@ -1,7 +1,7 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, ChatAction
 from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file, get_definition
-from postgres import *
+from postgre import *
 import threading
 import logging
 import random
