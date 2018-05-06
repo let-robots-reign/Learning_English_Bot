@@ -22,7 +22,7 @@ class DataBase:
 
     def insert_word(self, word, translation):
         self.cursor.execute("INSERT INTO user_{} (english_word, translation, completion) "
-                            "VALUES (%s, %s, %d);".format(self.user_id), (word, translation, 0))
+                            "VALUES (%s, %s, %s);".format(self.user_id), (word, translation, "0"))
         self.conn.commit()
 
     def select_uncompleted_words(self):
@@ -32,8 +32,8 @@ class DataBase:
     def increment_completion(self, word):
         current_completion = self.cursor.execute("SELECT completion FROM user_{} "
                                                  "WHERE english_word = %s;".format(self.user_id), (word,)).fetchall()
-        self.cursor.execute("UPDATE user_{} SET completion = %d WHERE english_word = %s;".format(self.user_id),
-                            (current_completion[0][0] + 20, word))
+        self.cursor.execute("UPDATE user_{} SET completion = %s WHERE english_word = %s;".format(self.user_id),
+                            (str(int(current_completion[0][0]) + 20), word))
         self.conn.commit()
 
     def read_dict(self):
