@@ -1,14 +1,10 @@
 import requests
-import sys
+import os
 import xml.etree.ElementTree as ET
 
-
-try:
-    with open("tokens.txt", 'r', encoding="utf8") as infile:
-        API_KEY, SPEECHKIT_KEY, UUID, DISK_TOKEN, OED_APP_ID, OED_KEY = (line.strip() for line in infile.readlines()[1:])
-except FileNotFoundError:
-    print("Отсутствует Yandex Translate Key или Yandex SpeechKit Key")
-    sys.exit(1)
+API_KEY, SPEECHKIT_KEY, UUID, DISK_TOKEN, OED_APP_ID, OED_KEY = os.environ["API_KEY"], os.environ["SPEECHKIT_KEY"], \
+                                                                os.environ["UUID"], os.environ["DISK_TOKEN"], \
+                                                                os.environ["OED_APP_ID"], os.environ["OED_KEY"]
 
 
 def translator(text, lang):

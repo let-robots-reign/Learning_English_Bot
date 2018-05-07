@@ -1,8 +1,7 @@
 from telegram.ext import Updater, MessageHandler, CommandHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, ChatAction
-from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, upload_file, get_file, get_definition
-from database import *
-import threading
+from translating_api import translator, detect_lang, ogg_to_text, text_to_ogg, get_definition
+from postgres import *
 import logging
 import random
 import sys
@@ -12,29 +11,7 @@ import os
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-try:
-    base_file = open('users.db', 'wb')
-    base_file.write(get_file('/english_learning_data/users.db'))
-    base_file.close()
-except:
-    print('Data base was not loaded')
-    sys.exit(1)
-
-
-def save_file():
-    threading.Timer(5, save_file).start()
-    upload_file('users.db', '/english_learning_data/users.db')
-
-
-save_file()
-
-
-try:
-    with open("tokens.txt", "r", encoding="utf8") as infile:
-        TOKEN, API_KEY = (line.strip() for line in infile.readlines()[:2])
-except FileNotFoundError:
-    print("Для работы нужен Telegram Token и Yandex Translate Key")
-    sys.exit(1)
+TOKEN, API_KEY = os.environ["TOKEN"], os.environ["API_KEY"]
 
 try:
     with open("preset_words.txt", "r", encoding="utf-8-sig") as infile:
@@ -58,7 +35,6 @@ train_markup = ReplyKeyboardMarkup(trainings_keyboard, one_time_keyboard=True)
 def error(bot, update, error):
     logger.warning('Update "%s" caused error "%s"', update, error)
     bot.send_message(chat_id=590585095, text='Update "%s" caused error "%s"' % (update, error))
-
 
 
 def setting_up(bot, update):
@@ -809,8 +785,7 @@ def help(bot, update, user_data):
 
 
 def main():
-    updater = Updater(TOKEN, request_kwargs={'proxy_url': 'http://41.160.118.226:8080',
-                                             'read_timeout': 10, 'connect_timeout': 10})
+    updater = Updater(TOKEN, request_kwargs={'read_timeout': 10, 'connect_timeout': 10})
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
