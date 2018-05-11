@@ -300,6 +300,57 @@ def adding_to_dict(bot, update, user_data):
         return DICT_ADDING
 
 
+def add_word(bot, update, user_data, args):
+    command = "".join(args)
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return TRANSLATE
+
+    if "-" in command and len(command.split("-")) == 2:
+        word, translation = command.split("-")[0].strip(), command.split("-")[1].strip()
+        if word in [item[0] for item in data_base.read_dict()]:
+            data_base.delete_word(word)
+            data_base.insert_word(word, translation)
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Вы уже добавляли это слово. Перевод слова %s был изменен на %s." % (word, translation)
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "You already have this word in your dictionary. The translation for %s has been replaced with %s."
+                    % (word, translation)
+                )
+        else:
+            data_base.insert_word(word, translation)
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Слово добавлено в словарь."
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "The word has been added to your dictionary."
+                )
+
+        return TRANSLATE
+
+    else:
+        if user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "Не могу понять вашего запроса. Убедитесь, правильно ли вы используете команду.\n"
+                "Верный формат: /add 'слово - перевод'."
+            )
+        elif user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "I can't conceive your request. Make sure that you use the command right.\n"
+                "The format of the request: /add word - translation."
+            )
+
+        return TRANSLATE
+
+
 def change_lang(bot, update):
     update.message.reply_text(
         "Выберите язык, на котором я буду с вами говорить."
@@ -799,7 +850,8 @@ def main():
                         CommandHandler("change_lang", change_lang),
                         CommandHandler("delete", delete_word, pass_args=True, pass_user_data=True),
                         CommandHandler("train_list", trainings_list, pass_user_data=True),
-                        CommandHandler("help", help, pass_user_data=True)],
+                        CommandHandler("help", help, pass_user_data=True),
+                        CommandHandler("add", add_word, pass_user_data=True, pass_args=True)],
 
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)],
 
