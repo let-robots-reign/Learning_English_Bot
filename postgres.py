@@ -21,7 +21,8 @@ class DataBase:
                             "(english_word varchar, translation varchar, completion integer);".format(self.user_id))
 
     def select_users(self):
-        self.cursor.execute("SELECT table_name FROM ALL_TABLES;")
+        self.cursor.execute("SELECT table_name FROM information_schema.tables "
+                            "WHERE table_schema NOT IN ('information_schema','pg_catalog');")
         return self.cursor.fetchall()
 
     def insert_word(self, word, translation):
