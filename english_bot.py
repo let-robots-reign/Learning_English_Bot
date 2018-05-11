@@ -43,14 +43,20 @@ def setting_up(bot, update):
     try:
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return TRANSLATE
+    try:
         users = [int(x.split("_")[1]) for x in data_base.select_users()]
         for user in users:
             if user == 590585095:
                 bot.send_message(chat_id=user, text="Что нового: test")
-
     except:
-        update.message.reply_text('Sorry, error while reading data base')
+        update.message.reply_text(
+            "Sorry, error while selecting users."
+        )
         return TRANSLATE
+
     update.message.reply_text(
         "Выберите язык, на котором я буду с вами говорить."
         "\n\n"
