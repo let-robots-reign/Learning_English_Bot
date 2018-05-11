@@ -48,6 +48,7 @@ def setting_up(bot, update):
         return TRANSLATE
     try:
         users = data_base.select_users()
+        update.message.reply_text("".join(users))
     except:
         update.message.reply_text(
             "Sorry, error while selecting users."
