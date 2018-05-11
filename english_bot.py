@@ -23,6 +23,8 @@ except FileNotFoundError:
 
 START_DIALOGUE, TRANSLATE, DICT_ADDING, CHANGE_LANG, TRAIN, ANSWER = range(6)
 
+rus_items = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+
 lang_keyboard = [["русский", "английский"]]
 markup = ReplyKeyboardMarkup(lang_keyboard, one_time_keyboard=True)
 
@@ -70,9 +72,10 @@ def start_dialogue(bot, update, user_data):
         )
         update.message.reply_text(
             'Чтобы передать мне слово или фразу на перевод, напишите мне "переведи (мне) / translate %слово%" '
-            'либо же просто "%слово%". Также вы можете прислать мне голосовое сообщение со словом. '
+            'либо же просто "%слово%". Также вы можете прислать мне голосовое сообщение со словом на русском языке. '
             'После этого вы сможете выбрать, добавлять ли слово в ваш словарь.\n'
             'Чтобы посмотреть последние добавленные слова, введите /show_dict.\n'
+            'Вы можете добавить пару "слово-перевод" с помощью команды /add %слово - перевод%.'
             'Вы можете удалить слово из словаря с помощью команды /delete %слово%.'
         )
 
@@ -90,9 +93,10 @@ def start_dialogue(bot, update, user_data):
         )
         update.message.reply_text(
             'To transfer a word for translation, write "переведи (мне) / translate %word%" or just "%word%". '
-            'In addition, you can send me a voice message with the word. '
+            'In addition, you can send me a voice message with the word in Russian. '
             'Afterwards, you can decide whether you want to add it to your dictionary or not.\n'
             'To overview last added words, you can type /show_dict.\n'
+            'To add a "word-translation" pair, use /add %word - translation%.'
             'You can delete a word from your dictionary using /delete %word%.'
         )
 
@@ -311,6 +315,18 @@ def add_word(bot, update, user_data, args):
 
     if "-" in command and len(command.split("-")) == 2:
         word, translation = command.split("-")[0].strip(), command.split("-")[1].strip()
+        # making sure the word is in english
+        if any(x in rus_items for x in word):
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Слово должно быть введено на английском языке."
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "The word should be in English."
+                )
+            return TRANSLATE
+
         if word in [item[0] for item in data_base.read_dict()]:
             data_base.delete_word(word)
             data_base.insert_word(word, translation)
@@ -334,8 +350,9 @@ def add_word(bot, update, user_data, args):
                     "The word has been added to your dictionary."
                 )
 
-        return TRANSLATE
+        data_base.close()
 
+        return TRANSLATE
     else:
         if user_data["lang_spoken"] == "ru":
             update.message.reply_text(
