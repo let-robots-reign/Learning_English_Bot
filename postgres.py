@@ -20,6 +20,10 @@ class DataBase:
         self.cursor.execute("CREATE TABLE IF NOT EXISTS user_{} "
                             "(english_word varchar, translation varchar, completion integer);".format(self.user_id))
 
+    def select_users(self):
+        self.cursor.execute("SELECT table_name FROM ALL_TABLES;")
+        return self.cursor.fetchall()
+
     def insert_word(self, word, translation):
         self.cursor.execute("INSERT INTO user_{} (english_word, translation, completion) "
                             "VALUES (%s, %s, %s);".format(self.user_id), (word, translation, "0"))

@@ -43,6 +43,11 @@ def setting_up(bot, update):
     try:
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
+        users = [int(x.split("_")[1]) for x in data_base.select_users()]
+        for user in users:
+            if user == 590585095:
+                bot.send_message(chat_id=user, text="Что нового: test")
+
     except:
         update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
@@ -313,7 +318,7 @@ def add_word(bot, update, user_data, args):
         update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
 
-    if "-" in command and len(command.split("-")) == 2:
+    if "-" in command and len(command.split("-", maxsplit=1)) == 2:
         word, translation = command.split("-")[0].strip(), command.split("-")[1].strip()
         # making sure the word is in english
         if any(x in rus_items for x in word):
