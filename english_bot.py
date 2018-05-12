@@ -23,6 +23,8 @@ except FileNotFoundError:
 
 START_DIALOGUE, TRANSLATE, DICT_ADDING, CHANGE_LANG, TRAIN, ANSWER = range(6)
 
+rus_items = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+
 lang_keyboard = [["русский", "английский"]]
 markup = ReplyKeyboardMarkup(lang_keyboard, one_time_keyboard=True)
 
@@ -41,9 +43,17 @@ def setting_up(bot, update):
     try:
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
+        if update.message.from_user.id == 590585095:
+            users = data_base.select_users()
+            for i in range(len(users)):
+                user = int(users[i][0].split("_")[1])
+                bot.send_message(chat_id=user, text='Что нового:\n'
+                                                    'Были исправлены некоторые мелкие ошибки.\n'
+                                                    'Чтобы продолжить работу со мной, введите /start.')
     except:
         update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
+
     update.message.reply_text(
         "Выберите язык, на котором я буду с вами говорить."
         "\n\n"
@@ -70,9 +80,10 @@ def start_dialogue(bot, update, user_data):
         )
         update.message.reply_text(
             'Чтобы передать мне слово или фразу на перевод, напишите мне "переведи (мне) / translate %слово%" '
-            'либо же просто "%слово%". Также вы можете прислать мне голосовое сообщение со словом. '
+            'либо же просто "%слово%". Также вы можете прислать мне голосовое сообщение со словом на русском языке. '
             'После этого вы сможете выбрать, добавлять ли слово в ваш словарь.\n'
             'Чтобы посмотреть последние добавленные слова, введите /show_dict.\n'
+            'Вы можете добавить пару "слово-перевод" с помощью команды /add %слово - перевод%.'
             'Вы можете удалить слово из словаря с помощью команды /delete %слово%.'
         )
 
@@ -90,9 +101,10 @@ def start_dialogue(bot, update, user_data):
         )
         update.message.reply_text(
             'To transfer a word for translation, write "переведи (мне) / translate %word%" or just "%word%". '
-            'In addition, you can send me a voice message with the word. '
+            'In addition, you can send me a voice message with the word in Russian. '
             'Afterwards, you can decide whether you want to add it to your dictionary or not.\n'
             'To overview last added words, you can type /show_dict.\n'
+            'To add a "word-translation" pair, use /add %word - translation%. '
             'You can delete a word from your dictionary using /delete %word%.'
         )
 
@@ -298,6 +310,70 @@ def adding_to_dict(bot, update, user_data):
             )
 
         return DICT_ADDING
+
+
+def add_word(bot, update, user_data, args):
+    command = " ".join(args)
+    try:
+        data_base = DataBase(update.message.from_user.id)
+        data_base.create_table()
+    except:
+        update.message.reply_text('Sorry, error while reading data base')
+        return TRANSLATE
+
+    if " - " in command and len(command.split(" - ", maxsplit=1)) == 2:
+        word, translation = command.split(" - ", maxsplit=1)[0].strip(), command.split(" - ", maxsplit=1)[1].strip()
+        # making sure the word is in english
+        if any(x in rus_items for x in word):
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Слово должно быть введено на английском языке."
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "The word should be in English."
+                )
+            return TRANSLATE
+
+        elif word in [item[0] for item in data_base.read_dict()]:
+            data_base.delete_word(word)
+            data_base.insert_word(word, translation)
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Вы уже добавляли это слово. Перевод слова %s был изменен на %s." % (word, translation)
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "You already have this word in your dictionary. The translation for %s has been replaced with %s."
+                    % (word, translation)
+                )
+        else:
+            data_base.insert_word(word, translation)
+            if user_data["lang_spoken"] == "ru":
+                update.message.reply_text(
+                    "Слово добавлено в словарь."
+                )
+            elif user_data["lang_spoken"] == "en":
+                update.message.reply_text(
+                    "The word has been added to your dictionary."
+                )
+
+        data_base.close()
+
+        return TRANSLATE
+    else:
+        if user_data["lang_spoken"] == "ru":
+            update.message.reply_text(
+                "Не могу понять вашего запроса. Убедитесь, правильно ли вы используете команду.\n"
+                "Верный формат: /add 'слово - перевод'."
+            )
+        elif user_data["lang_spoken"] == "en":
+            update.message.reply_text(
+                "I can't conceive your request. Make sure that you use the command right.\n"
+                "The format of the request: /add word - translation."
+            )
+
+        return TRANSLATE
 
 
 def change_lang(bot, update):
@@ -696,6 +772,7 @@ def reset(bot, update, user_data):
 
     return ConversationHandler.END
 
+
 def definition_train(bot, update, user_data):
     try:
         data_base = DataBase(update.message.from_user.id)
@@ -799,7 +876,8 @@ def main():
                         CommandHandler("change_lang", change_lang),
                         CommandHandler("delete", delete_word, pass_args=True, pass_user_data=True),
                         CommandHandler("train_list", trainings_list, pass_user_data=True),
-                        CommandHandler("help", help, pass_user_data=True)],
+                        CommandHandler("help", help, pass_user_data=True),
+                        CommandHandler("add", add_word, pass_user_data=True, pass_args=True)],
 
             DICT_ADDING: [MessageHandler(Filters.text, adding_to_dict, pass_user_data=True)],
 
