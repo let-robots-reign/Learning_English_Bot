@@ -2,9 +2,9 @@ import requests
 import os
 import xml.etree.ElementTree as ET
 
-API_KEY, SPEECHKIT_KEY, UUID, DISK_TOKEN, OED_APP_ID, OED_KEY = os.environ["API_KEY"], os.environ["SPEECHKIT_KEY"], \
-                                                                os.environ["UUID"], os.environ["DISK_TOKEN"], \
-                                                                os.environ["OED_APP_ID"], os.environ["OED_KEY"]
+API_KEY, SPEECHKIT_KEY, UUID, OED_APP_ID, OED_KEY = os.environ["API_KEY"], os.environ["SPEECHKIT_KEY"], \
+                                                    os.environ["UUID"], os.environ["OED_APP_ID"], \
+                                                    os.environ["OED_KEY"]
 
 
 def translator(text, lang):
@@ -76,37 +76,6 @@ def text_to_ogg(text, lang):
     except:
         return None
 
-
-def upload_file(filename, disk_path):
-    try:
-        host_name = 'https://cloud-api.yandex.net/v1/disk/resources/upload?path={}&overwrite=true'.format(disk_path)
-        headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-        href = requests.get(host_name, headers=headers).json()['href']
-        return bool(requests.put(href, files={'file': open(filename, 'rb')}))
-    except:
-        return False
-
-
-def get_file(filename):
-    try:
-        host_name = 'https://cloud-api.yandex.net/v1/disk/resources/download?path={}'.format(filename)
-        headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-        href = requests.get(host_name, headers=headers).json()['href']
-        return requests.get(href).content
-    except:
-        return None
-
-
-def delete(filename):
-    host_name = 'https://cloud-api.yandex.net/v1/disk/resources?path='.format(filename)
-    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-    return bool(requests.delete(host_name, headers=headers))
-
-
-def get_files_list():
-    host_name = 'https://cloud-api.yandex.net/v1/disk/resources/files'
-    headers = {'Authorization': 'OAuth {}'.format(DISK_TOKEN)}
-    return requests.get(host_name, headers=headers).json()
 
 def get_definition(word, lang):
     try:
