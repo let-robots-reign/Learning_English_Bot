@@ -49,7 +49,9 @@ def setting_up(bot, update):
                 user = int(users[i][0].split("_")[1])
                 bot.send_message(chat_id=user, text='Что нового:\n'
                                                     'Теперь вы можете добавлять собственные пары "слово-перевод"\n'
-                                                    'Для этого введите /add %слово - перевод%.')
+                                                    'Для этого введите /add %слово - перевод%.'
+                                                    'Также были исправлены некоторые ошибки.\n'
+                                                    'Чтобы продолжить работу со мной, введите /start.')
     except:
         update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
@@ -321,8 +323,8 @@ def add_word(bot, update, user_data, args):
         update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
 
-    if "-" in command and len(command.split("-", maxsplit=1)) == 2:
-        word, translation = command.split("-")[0].strip(), command.split("-")[1].strip()
+    if "-" in command and len(command.split(" - ", maxsplit=1)) == 2:
+        word, translation = command.split(" - ", maxsplit=1)[0].strip(), command.split(" - ", maxsplit=1)[1].strip()
         # making sure the word is in english
         if any(x in rus_items for x in word):
             if user_data["lang_spoken"] == "ru":
@@ -335,7 +337,7 @@ def add_word(bot, update, user_data, args):
                 )
             return TRANSLATE
 
-        if word in [item[0] for item in data_base.read_dict()]:
+        elif word in [item[0] for item in data_base.read_dict()]:
             data_base.delete_word(word)
             data_base.insert_word(word, translation)
             if user_data["lang_spoken"] == "ru":
