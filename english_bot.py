@@ -43,15 +43,6 @@ def setting_up(bot, update):
     try:
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
-        if update.message.from_user.id == 590585095:
-            users = data_base.select_users()
-            for i in range(len(users)):
-                user = int(users[i][0].split("_")[1])
-                bot.send_message(chat_id=user, text='Что нового:\n'
-                                                    'Теперь вы можете добавлять собственные пары "слово-перевод"\n'
-                                                    'Для этого введите /add %слово - перевод%.'
-                                                    'Также были исправлены некоторые ошибки.\n'
-                                                    'Чтобы продолжить работу со мной, введите /start.')
     except:
         update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
@@ -106,7 +97,7 @@ def start_dialogue(bot, update, user_data):
             'In addition, you can send me a voice message with the word in Russian. '
             'Afterwards, you can decide whether you want to add it to your dictionary or not.\n'
             'To overview last added words, you can type /show_dict.\n'
-            'To add a "word-translation" pair, use /add %word - translation%.'
+            'To add a "word-translation" pair, use /add %word - translation%. '
             'You can delete a word from your dictionary using /delete %word%.'
         )
 
@@ -315,7 +306,7 @@ def adding_to_dict(bot, update, user_data):
 
 
 def add_word(bot, update, user_data, args):
-    command = "".join(args)
+    command = " ".join(args)
     try:
         data_base = DataBase(update.message.from_user.id)
         data_base.create_table()
@@ -323,7 +314,7 @@ def add_word(bot, update, user_data, args):
         update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
 
-    if "-" in command and len(command.split(" - ", maxsplit=1)) == 2:
+    if " - " in command and len(command.split(" - ", maxsplit=1)) == 2:
         word, translation = command.split(" - ", maxsplit=1)[0].strip(), command.split(" - ", maxsplit=1)[1].strip()
         # making sure the word is in english
         if any(x in rus_items for x in word):
@@ -773,6 +764,7 @@ def reset(bot, update, user_data):
     data_base.close()
 
     return ConversationHandler.END
+
 
 def definition_train(bot, update, user_data):
     try:
