@@ -56,8 +56,8 @@ def setting_up(bot, update):
                 user = int(users[i][0].split("_")[1])
                 #print(user)
                 if user == 590585095:
-                    bot.send_message(chat_id=user, text='%s, просим прощения за многочисленные ошибки. Сейчас мы надеемся,'
-                                                        'что бот будет работать исправно у всех пользователей.\n'
+                    bot.send_message(chat_id=user, text='Уважаемый пользователь, просим прощения за многочисленные ошибки. '
+                                                        'Сейчас мы надеемся, что бот будет работать исправно у всех пользователей.\n'
                                                         'Enjoy your learning!')
                     bot.send_photo(chat_id=user,
                                    photo="http://www.broadway.kiev.ua/wp-content/uploads/2017/04/motivation-to-learn-english-e1491480111422.jpg")
