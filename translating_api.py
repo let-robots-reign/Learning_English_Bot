@@ -5,6 +5,12 @@ import xml.etree.ElementTree as ET
 API_KEY, SPEECHKIT_KEY, UUID, OED_APP_ID, OED_KEY = os.environ["API_KEY"], os.environ["SPEECHKIT_KEY"], \
                                                     os.environ["UUID"], os.environ["OED_APP_ID"], \
                                                     os.environ["OED_KEY"]
+# try:
+#     with open("tokens.txt", 'r', encoding="utf8") as infile:
+#         API_KEY, SPEECHKIT_KEY, UUID, DISK_TOKEN, OED_APP_ID, OED_KEY = (line.strip() for line in infile.readlines()[1:])
+# except FileNotFoundError:
+#     print("Отсутствует Yandex Translate Key или Yandex SpeechKit Key")
+#     sys.exit(1)
 
 
 def translator(text, lang):

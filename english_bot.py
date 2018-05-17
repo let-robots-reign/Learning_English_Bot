@@ -12,6 +12,12 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(leve
 logger = logging.getLogger(__name__)
 
 TOKEN, API_KEY = os.environ["TOKEN"], os.environ["API_KEY"]
+# try:
+#     with open("tokens.txt", "r", encoding="utf8") as infile:
+#         TOKEN, API_KEY = (line.strip() for line in infile.readlines()[:2])
+# except FileNotFoundError:
+#     print("Для работы нужен Telegram Token и Yandex Translate Key")
+#     sys.exit(1)
 
 try:
     with open("preset_words.txt", "r", encoding="utf-8-sig") as infile:
@@ -46,14 +52,17 @@ def setting_up(bot, update):
         if update.message.from_user.id == 590585095:
             users = data_base.select_users()
             for i in range(len(users)):
+                #print(users[i])
                 user = int(users[i][0].split("_")[1])
-                bot.send_message(chat_id=user, text='Работа бота восстановлена.\n'
-                                                    'Чтобы продолжить работу со мной, введите /start.'
-                                                    'Enjoy your learning!')
-                bot.send_photo(chat_id=user,
-                               photo="https://realenglishconversations.files.wordpress.com/2014/12/inspirational-language-quote.png?w=640")
-    except:
-        update.message.reply_text('Sorry, error while reading data base')
+                #print(user)
+                # bot.send_message(chat_id=user, text='Работа бота восстановлена.\n'
+                #                                     'Чтобы продолжить работу со мной, введите /start.'
+                #                                     'Enjoy your learning!')
+                # bot.send_photo(chat_id=user,
+                #                photo="https://realenglishconversations.files.wordpress.com/2014/12/inspirational-language-quote.png?w=640")
+    except Exception as e:
+        bot.send_message(chat_id=590585095, text=e)
+        #update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
 
     update.message.reply_text(
