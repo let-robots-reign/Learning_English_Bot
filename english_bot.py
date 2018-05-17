@@ -55,14 +55,15 @@ def setting_up(bot, update):
                 #print(users[i])
                 user = int(users[i][0].split("_")[1])
                 #print(user)
-                # bot.send_message(chat_id=user, text='Работа бота восстановлена.\n'
-                #                                     'Чтобы продолжить работу со мной, введите /start.'
-                #                                     'Enjoy your learning!')
-                # bot.send_photo(chat_id=user,
-                #                photo="https://realenglishconversations.files.wordpress.com/2014/12/inspirational-language-quote.png?w=640")
+                if user == 590585095:
+                    bot.send_message(chat_id=user, text='%s, просим прощения за многочисленные ошибки. Сейчас мы надеемся,'
+                                                        'что бот будет работать исправно у всех пользователей.\n'
+                                                        'Enjoy your learning!')
+                    bot.send_photo(chat_id=user,
+                                   photo="http://www.broadway.kiev.ua/wp-content/uploads/2017/04/motivation-to-learn-english-e1491480111422.jpg")
     except Exception as e:
         bot.send_message(chat_id=590585095, text=e)
-        #update.message.reply_text('Sorry, error while reading data base')
+        update.message.reply_text('Sorry, error while reading data base')
         return TRANSLATE
 
     update.message.reply_text(
